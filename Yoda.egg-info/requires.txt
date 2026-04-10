@@ -1,0 +1,13 @@
+requests
+scapy
+manuf
+ipaddress
+requests
+rich
+pathlib
+pyfiglet
+gtts
+pyttsx3
+ifcfg
+sounddevice
+samplerate

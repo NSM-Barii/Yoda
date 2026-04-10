@@ -35,6 +35,7 @@ LOCK = threading.Lock()
 
 class Network_Scanner():
     """This class will be responsible for finding local devices and keep tracking off there connection status"""
+    
 
 
     def __init__(self):
@@ -65,7 +66,7 @@ class Network_Scanner():
 
 
         # VERBOSE OFF
-        Network_Sniffer.verbose = False
+        #Network_Sniffer.verbose = False
 
         
 
