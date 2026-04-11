@@ -138,7 +138,7 @@ class DataBase():
             
             try:
 
-                host = socket.gethostbyaddr(target_ip)[0]
+                host = socket.gethostbyaddr(target_ip)[0].split(".")[0]
                 return host
         
             except Exception as e: console.print(f"[bold red][-] Database Exception Error:[bold yellow] {e}"); return False

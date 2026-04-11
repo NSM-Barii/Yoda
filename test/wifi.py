@@ -142,8 +142,8 @@ class WiFi():
                 target_mac = recv.hwsrc
 
 
-                host = DataBase.WiFi.get_host_name(target_ip=target_ip)
-                vendor = DataBase.WiFi.get_vendor_main(mac=target_mac)
+                host = DataBase.get_host_name(target_ip=target_ip)
+                vendor = DataBase.get_vendor_main(mac=target_mac)
 
                 devices[num] = {
                     "target_ip": target_ip,
@@ -152,7 +152,7 @@ class WiFi():
                     "vendor": vendor
                 }; num += 1
 
-                console.print(f"{target_ip} <-> {target_mac} | {host} - {vendor}")
+                console.print(f"{num} - {target_ip} <-> {target_mac} | {host} - {vendor}")
             
 
             return devices
@@ -1408,4 +1408,4 @@ if __name__ == "__main__":
 
     test = 1
 
-    if test == 1:  WiFi.network_scan_arp(6tr5t)
+    if test == 1:  WiFi.network_scan_arp()
