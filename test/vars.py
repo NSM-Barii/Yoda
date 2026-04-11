@@ -28,10 +28,11 @@ class Variables():
     
 
     
-    iface     = None  # FOR MONITOR MODE
-    subnet    = None
-    ip_router = None
+    iface     = "wlan1"  # FOR MONITOR MODE
+    subnet    = "192.168.1.0/24"
+    ip_router = "192.168.1.1"
     ip_local  = None
+    verbose   = False
 
     
 
@@ -42,26 +43,23 @@ class Variables():
 
     # DEFAULT
     timeout = 15
-    channel = None # OR 6
-    
-
+    channel = 6 # OR 6
 
     # WAR DRIVING
     mode = 1 # AP's ONLY == 1 else 2 == FOR CLIENTS AND NON BEACON FRAMES
 
-
     # EVIL TWIN // BEACON FLOOOOD
-    portal_num = 1
-    
-
-    # SNIFF FOR SSIDS
-    # uses iface
-    
+    portal_num = 1    
 
     # DEAUTH // CLIENT SNIFFER
     mac_src    = None
     mac_dst    = None
     mac_client = None  # SINGLE CLIENT DEAUTH
 
+    inter    = None
+    loop     = None
+    count    = None
+    realtime = None
 
+    reasons = [4,5,7,15]
 
