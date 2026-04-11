@@ -2,3 +2,4 @@ Yoda.egg-info/SOURCES.txt
 Yoda.egg-info/dependency_links.txt
 test/__pycache__/database.cpython-314.pyc
 test/__pycache__/vars.cpython-314.pyc
+test/.env
