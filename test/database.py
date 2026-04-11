@@ -132,13 +132,13 @@ class DataBase():
         
 
         @staticmethod
-        def get_host_name(ipaddress):
+        def get_host_name(target_ip):
             """This will retrieve hostname"""
 
             
             try:
 
-                host = socket.gethostbyaddr(ipaddress)
+                host = socket.gethostbyaddr(target_ip)[0]
                 return host
         
             except Exception as e: console.print(f"[bold red][-] Database Exception Error:[bold yellow] {e}"); return False

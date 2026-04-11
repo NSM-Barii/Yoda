@@ -3,6 +3,7 @@
 
 # IMPORTS
 from rich.console import Console
+from mcp.server.fastmcp import FastMCP
 
 
 
@@ -14,6 +15,8 @@ class Variables():
     
     # CONSTANTS
     console = Console()
+    mcp = FastMCP("Yoda")
+    
 
     
     iface     = None  # FOR MONITOR MODE
