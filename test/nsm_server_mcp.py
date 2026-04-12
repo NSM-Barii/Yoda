@@ -3,9 +3,9 @@
 
 # IMPORTS
 from mcp.server.fastmcp import FastMCP
-from wifi import WiFi, SSID_Sniffer, Client_Sniffer, Deauth_Attacker, Evil_Twin, Beacon_Flooder, War_Driving
-from ble import Bluetooth
-from vars import Variables
+from nsm_wifi import WiFi, SSID_Sniffer, Client_Sniffer, Deauth_Attacker, Evil_Twin, Beacon_Flooder, War_Driving
+from nsm_ble import Bluetooth
+from nsm_vars import Variables
 import asyncio
 
 mcp = FastMCP(

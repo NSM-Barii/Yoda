@@ -7,8 +7,8 @@ import asyncio
 
 
 # NSM IMPORTS
-from vars import Variables
-from database import DataBase
+from nsm_vars import Variables
+from nsm_database import DataBase
 
 
 # CONSTANTS

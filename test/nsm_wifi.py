@@ -17,8 +17,8 @@ from datetime import datetime
 
 
 # NSM IMPORTS
-from vars import Variables
-from database import DataBase, Background_Threads
+from nsm_vars import Variables
+from nsm_database import DataBase, Background_Threads
 
 
 # CONSTANTS

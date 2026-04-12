@@ -10,7 +10,7 @@ from scapy.layers.dot11 import Dot11Elt, Dot11Beacon
 
 
 # NSM IMPORTS
-from vars import Variables
+from nsm_vars import Variables
 
 
 # CONSTANTS

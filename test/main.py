@@ -6,8 +6,8 @@ import threading
 
 
 # NSM IMPORTS
-from vars import Variables
-import server_mcp, voice_agent
+from nsm_vars import Variables
+import nsm_server_mcp, nsm_voice_agent
 
 
 # CONSTANTS
