@@ -4,7 +4,6 @@ requests
 ipaddress
 asyncio
 manuf
-
 rich
 
 # LLM / Voice Agent

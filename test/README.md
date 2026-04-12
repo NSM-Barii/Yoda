@@ -1,243 +1,280 @@
-# Yoda Voice Agent - Reference Implementation
+# Yoda Voice Agent
 
-This directory contains **heavily documented reference code** for building Yoda's voice interface.
+Voice-activated Intrusion Detection System powered by LiveKit Agents + MCP.
 
-**Important:** This is a learning reference, not production code. Study it, understand it, then rebuild it yourself.
+## Two Setup Options
+
+### Option A: Cloud LiveKit (Recommended for Getting Started)
+- ✅ Run MCP + voice agent on **remote Linux server**
+- ✅ Connect from **any device** via browser
+- ✅ No Docker needed
+- ❌ Free tier quota limits
+
+### Option B: Self-Hosted LiveKit (For Unlimited Local Use)
+- ✅ Unlimited usage, no quotas
+- ✅ Everything runs locally
+- ❌ **All components must be on same Linux machine**
+- ❌ Requires Docker
 
 ---
 
-## What's In Here
+## Quick Start (Cloud LiveKit)
 
-| File | What It Does | Key Concepts |
-|------|--------------|--------------|
-| `server_mcp.py` | MCP server that exposes network tools | FastMCP, tool decoration, SSE transport |
-| `voice_agent.py` | Voice pipeline (STT→LLM→TTS) | LiveKit Agents, provider plugins, system prompts |
-| `.env.example` | API keys and configuration | Environment variables |
+**Best for:** Testing, demos, remote access
+
+### Prerequisites
+- Linux server with Python 3.13+
+- OpenAI API key
+- Deepgram API key
+- LiveKit Cloud account (free tier)
+
+### Setup
+
+1. **Get API Keys**
+   - OpenAI: https://platform.openai.com/api-keys
+   - Deepgram: https://console.deepgram.com
+   - LiveKit: https://cloud.livekit.io
+
+2. **Configure `.env`**
+   ```bash
+   OPENAI_API_KEY=sk-...
+   DEEPGRAM_API_KEY=...
+   LIVEKIT_URL=wss://your-project.livekit.cloud
+   LIVEKIT_API_KEY=APIxxxxxxxxx
+   LIVEKIT_API_SECRET=xxxxxxxxx
+   ```
+
+3. **Start MCP Server** (Terminal 1)
+   ```bash
+   cd yoda/test
+   source venv/bin/activate
+   sudo venv/bin/python server_mcp.py
+   ```
+
+4. **Start Voice Agent** (Terminal 2)
+   ```bash
+   cd yoda/test
+   source venv/bin/activate
+   export SSL_CERT_FILE=$(python -m certifi)
+   python voice_agent.py dev
+   ```
+
+5. **Connect from Browser**
+   - Go to: https://agents-playground.livekit.io
+   - Connect to your LiveKit project
+   - Start talking!
+
+**That's it.** Your MCP server and voice agent run on Linux, you access via any web browser.
+
+**Note:** No need to clone the agents-playground repo for cloud setup. Just use the hosted version.
 
 ---
 
-## How To Use This
+## Full Setup (Self-Hosted LiveKit)
 
-### Step 1: Read First, Code Later
+**Best for:** Unlimited usage, offline operation, no quotas
 
-**Don't run this code yet.** Read it thoroughly:
+### ⚠️ IMPORTANT: All components must run on the SAME Linux machine
+- Docker LiveKit server
+- MCP server
+- Voice agent
+- Playground UI
 
-1. **Read `server_mcp.py`**
-   - Understand what FastMCP does
-   - See how `@mcp.tool()` works
-   - Look at the tool function pattern
-   - Follow the documentation links
+You cannot run Docker on one machine and access from another easily.
 
-2. **Read `voice_agent.py`**
-   - Understand the voice pipeline flow
-   - See how providers are configured
-   - Study the system prompt structure
-   - Follow the documentation links
+### Prerequisites
+- Linux machine with Docker
+- Python 3.13+
+- Node.js 18+
 
-3. **Look up concepts you don't understand**
-   - What is SSE (Server-Sent Events)?
-   - How does LiveKit handle audio streaming?
-   - What is Voice Activity Detection?
-   - How does MCP tool calling work?
+### One-Time Setup
 
-### Step 2: Set Up Your Learning Environment
-
-**Install dependencies:**
+**1. Install Dependencies**
 ```bash
-cd test/
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install livekit-agents fastmcp python-dotenv
-pip install livekit-plugins-openai livekit-plugins-groq livekit-plugins-silero
+# Node.js and pnpm
+sudo apt install nodejs npm
+npm install -g pnpm
+
+# Docker (if not installed)
+curl -fsSL https://get.docker.com | sh
 ```
 
-**Get API keys:**
-1. **OpenAI:** https://platform.openai.com/api-keys
-2. **Groq:** https://console.groq.com/keys (free tier)
-3. **LiveKit:** https://cloud.livekit.io (free tier)
-
-**Configure environment:**
+**2. Start LiveKit Docker Container**
 ```bash
-cp .env.example .env
-# Edit .env and add your API keys
+docker run -d --name livekit-server \
+  -p 7880:7880 -p 7881:7881 -p 7882:7882/udp \
+  -e LIVEKIT_KEYS="devkey: devsecret" \
+  livekit/livekit-server --dev
+
+# Verify it's running
+docker ps | grep livekit
 ```
 
-### Step 3: Test Individual Components
+**3. Clone and Setup Playground**
 
-**Test MCP server only:**
+The playground provides a web UI to talk to your voice agent. For self-hosted, you need to run it locally.
+
 ```bash
-# Terminal 1
-python server_mcp.py
+cd yoda/test
+git clone https://github.com/livekit/agents-playground
+cd agents-playground
+pnpm install
 
-# Terminal 2 - test it works
-curl http://localhost:8000/sse
-# Should see an SSE stream connection
+# Create config
+cat > .env.local << 'EOF'
+LIVEKIT_API_KEY=devkey
+LIVEKIT_API_SECRET=devsecret
+NEXT_PUBLIC_LIVEKIT_URL=ws://localhost:7880
+EOF
 ```
 
-**Test voice agent only (without MCP):**
-- Comment out the `mcp_servers` line in `voice_agent.py`
-- Run `python voice_agent.py dev`
-- Test basic voice interaction without tools
-
-**Test them together:**
+**4. Configure Voice Agent `.env`**
 ```bash
-# Terminal 1 - MCP server
-python server_mcp.py
+OPENAI_API_KEY=sk-...
+DEEPGRAM_API_KEY=...
 
-# Terminal 2 - Voice agent
+# Self-hosted LiveKit (DO NOT CHANGE)
+LIVEKIT_URL=ws://localhost:7880
+LIVEKIT_API_KEY=devkey
+LIVEKIT_API_SECRET=devsecret
+```
+
+### Daily Usage (Self-Hosted)
+
+**Terminal 1: Start MCP Server**
+```bash
+cd yoda/test
+source venv/bin/activate
+sudo venv/bin/python server_mcp.py
+```
+
+**Terminal 2: Start Voice Agent**
+```bash
+cd yoda/test
+source venv/bin/activate
+export SSL_CERT_FILE=$(python -m certifi)
 python voice_agent.py dev
-
-# Browser - LiveKit Playground
-# Go to https://agents-playground.livekit.io
-# Connect to your room
-# Say "scan my network"
 ```
 
-### Step 4: Study the Documentation
-
-**Core concepts to master:**
-
-**For MCP Server:**
-- [ ] What is MCP? (https://modelcontextprotocol.io)
-- [ ] How does FastMCP work? (https://github.com/jlowin/fastmcp)
-- [ ] What makes a good tool docstring?
-- [ ] How does the LLM discover tools?
-- [ ] What is SSE and why use it?
-
-**For Voice Agent:**
-- [ ] LiveKit Agents overview (https://docs.livekit.io/agents/overview)
-- [ ] How do provider plugins work? (https://docs.livekit.io/agents/plugins)
-- [ ] What is Voice Activity Detection?
-- [ ] How does turn detection work?
-- [ ] How does the Agent class manage conversations?
-- [ ] What makes a good system prompt?
-
-### Step 5: Rebuild From Scratch
-
-Once you understand the concepts:
-
-1. **Close this reference code**
-2. **Create a new file**
-3. **Build your own version from scratch**
-4. **Use the official docs** as your guide
-5. **Reference this code only when stuck**
-
-Your version might look similar (it's a framework pattern), but you'll understand every line because YOU built it.
-
----
-
-## Key Learning Resources
-
-### FastMCP
-- Repo: https://github.com/jlowin/fastmcp
-- Examples: https://github.com/jlowin/fastmcp/tree/main/examples
-
-### LiveKit Agents
-- Overview: https://docs.livekit.io/agents/overview
-- Quickstart: https://docs.livekit.io/agents/quickstart
-- Plugins: https://docs.livekit.io/agents/plugins
-- MCP Integration: https://docs.livekit.io/agents/mcp
-- Examples: https://github.com/livekit/agents/tree/main/examples
-
-### MCP Protocol
-- Spec: https://modelcontextprotocol.io
-- Tool Calling: https://modelcontextprotocol.io/docs/concepts/tools
-
-### Provider Docs
-- OpenAI GPT: https://platform.openai.com/docs/models/gpt-4o
-- OpenAI TTS: https://platform.openai.com/docs/guides/text-to-speech
-- Groq Whisper: https://console.groq.com/docs/speech-text
-
----
-
-## Understanding the Code Structure
-
-### MCP Server (`server_mcp.py`)
-
-```python
-# 1. Import FastMCP
-from mcp.server.fastmcp import FastMCP
-
-# 2. Create server instance
-mcp = FastMCP(name="...")
-
-# 3. Define tools (decorated functions)
-@mcp.tool()
-def my_tool():
-    """Docstring - LLM reads this"""
-    # Your code
-    return {"result": "data"}
-
-# 4. Run the server
-mcp.run(transport='sse')
+**Terminal 3: Start Playground**
+```bash
+cd yoda/test/agents-playground
+pnpm run dev
 ```
 
-**Key points:**
-- `@mcp.tool()` makes a function callable by the LLM
-- Docstring is CRITICAL - it's how the LLM knows when to use the tool
-- Return values must be JSON-serializable
-- Server runs on port 8000 by default
+**Browser:** Open `http://localhost:3000` on the **same Linux machine**
 
-### Voice Agent (`voice_agent.py`)
+---
 
-```python
-# 1. Import framework and plugins
-from livekit.agents import Agent
-from livekit.plugins import openai, groq
+## Architecture
 
-# 2. Build providers
-stt = groq.STT(model="whisper-large-v3-turbo")
-llm = openai.LLM(model="gpt-4o")
-tts = openai.TTS(model="tts-1", voice="nova")
-
-# 3. Create agent
-agent = Agent(
-    instructions="System prompt...",
-    stt=stt,
-    llm=llm,
-    tts=tts,
-    mcp_servers=["http://localhost:8000/sse"]
-)
-
-# 4. Start session
-await session.start(agent=agent, room=ctx.room)
+**Cloud Setup:**
+```
+Browser (anywhere) → LiveKit Cloud → Voice Agent (Linux) → MCP Server (Linux)
 ```
 
-**Key points:**
-- Providers handle the API calls (you just configure them)
-- System prompt defines the AI's personality
-- Agent class wires everything together automatically
-- LiveKit handles all audio streaming, turn-taking, etc.
+**Self-Hosted Setup:**
+```
+Browser (localhost) → LiveKit Docker → Voice Agent → MCP Server
+        ↑
+   All on same Linux machine
+```
 
 ---
 
-## Common Questions
+## Available Voice Commands
 
-**Q: Do I need to understand the LiveKit internals?**
-A: No. LiveKit abstracts away the hard parts (audio streaming, WebRTC, etc.). You just need to understand how to configure providers and define behavior.
-
-**Q: How does the LLM know which tool to call?**
-A: It reads the tool's name and docstring. That's why clear, specific docstrings are critical.
-
-**Q: Can I use different providers?**
-A: Yes! LiveKit has plugins for many providers (Gemini, Deepgram, ElevenLabs, etc.). Just swap the plugin import and configuration.
-
-**Q: Why is the system prompt so important?**
-A: The LLM reads it before every interaction. It's the only way to control personality, tone, and behavior since you can't modify the LLM itself.
-
-**Q: How does the audio streaming work?**
-A: LiveKit handles it via WebRTC. Your agent connects to LiveKit Cloud, which manages the audio rooms. You don't code the streaming part.
+- "scan my network" → ARP scan
+- "scan for WiFi networks" → WiFi SSID sniffing
+- "scan for Bluetooth devices" → BLE discovery
+- "sniff for access points" → Monitor mode WiFi scan
+- "find clients on this network" → Client enumeration
+- "deauth this network" → Deauth attack
+- "launch evil twin" → Fake AP + captive portal
+- "flood fake SSIDs" → Beacon flooding
+- "start war driving" → Passive WiFi collection
 
 ---
 
-## Next Steps
+## Troubleshooting
 
-1. **Read both files thoroughly** (don't skip the comments)
-2. **Look up unfamiliar concepts** (follow the documentation links)
-3. **Test the code** (get it running)
-4. **Study the official docs** (understand the frameworks)
-5. **Rebuild from scratch** (make it yours)
+### Voice agent not calling tools
+
+**Check MCP server logs:**
+```bash
+# Should see: "Processing request of type ListToolsRequest"
+```
+
+**Check voice agent logs:**
+```bash
+# Should see: MCP connection attempts
+```
+
+### Self-hosted: Can't access playground from browser
+
+**Problem:** Trying to access from different machine
+
+**Solution:** Access from `http://localhost:3000` on the **same Linux machine** running Docker
+
+### Cloud: Quota exceeded
+
+**Problem:** LiveKit Cloud free tier maxed out
+
+**Solutions:**
+1. Create new LiveKit account with different email
+2. Wait for monthly reset
+3. Upgrade to paid plan ($29/month)
+4. Switch to self-hosted setup
+
+### OpenAI API errors
+
+**Problem:** Billing not set up or quota exceeded
+
+**Solution:**
+1. Check: https://platform.openai.com/account/billing
+2. Add payment method
+3. Set billing alerts
 
 ---
 
-**Remember:** The goal isn't to copy this code. It's to understand the patterns well enough to build your own version confidently.
+## Costs
+
+### Cloud LiveKit
+- LiveKit: Free tier (limited), $29/month after
+- Deepgram: $200 free credits, then $0.0043/min
+- OpenAI GPT-4o: $2.50/1M input, $10/1M output
+- OpenAI TTS: $15/1M characters
+
+**Monthly estimate:** $5-30 depending on usage
+
+### Self-Hosted LiveKit
+- LiveKit: **FREE** (runs on Docker)
+- Deepgram: $200 free credits, then $0.0043/min
+- OpenAI GPT-4o: $2.50/1M input, $10/1M output
+- OpenAI TTS: $15/1M characters
+
+**Monthly estimate:** $5-10 for regular testing
+
+---
+
+## Files
+
+- `server_mcp.py` - Exposes network tools via MCP
+- `voice_agent.py` - Voice pipeline (STT → LLM → TTS)
+- `.env` - API keys and config
+- `agents-playground/` - Local UI (self-hosted only)
+
+---
+
+## Which Setup Should I Use?
+
+**Use Cloud LiveKit if:**
+- You want to test quickly
+- You want remote access
+- You're okay with quotas
+
+**Use Self-Hosted if:**
+- You need unlimited usage
+- You want full control
+- You have a dedicated Linux machine
+- You want zero recurring LiveKit costs
