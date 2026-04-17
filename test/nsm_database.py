@@ -562,16 +562,9 @@ class Extensions():
         if color in valid and cls.last_count != current_count:
 
             if verbose: console.print(say)
-            console.print(f"{cls.last_color} --> {color}")
-            console.print(f"{cls.last_count} --> {current_count}")
+            #console.print(f"{cls.last_color} --> {color}")
+            #console.print(f"{cls.last_count} --> {current_count}")
 
-            if not cls.drive_error:
-                
-                try:
-                    pass
-
-                except Exception as e: console.print(f"[bold red]Exception Error:[bold yellow] {e}")
-                cls.drive_error = True
         
 
 
@@ -580,12 +573,11 @@ class Extensions():
         """This one method will be responbile for calling and handling all methods within this class <--"""
 
         
-        if not Variables.server_ip: return False
 
-        average = Extensions._average_ratio(current_count=current_count)
-        data  = Extensions._change_color(current_count=current_count, average_ratio=average, server_ip=server_ip)
+        average = cls._average_ratio(current_count=current_count)
+        data    = cls._change_color(current_count=current_count, average_ratio=average, server_ip=server_ip)
 
-        Extensions._tts_google(data=data)
+        cls._tts_google(data=data)
 
         cls.last_count = data[0]
         cls.last_color = data[2]

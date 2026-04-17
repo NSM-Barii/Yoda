@@ -22,6 +22,7 @@ monitor_ssid_count
 
 """
 
+# Kodak: https://www.youtube.com/watch?v=accWa7GGCd4&list
 
 
 
@@ -86,5 +87,6 @@ class Variables():
 
     live_map  = {}
     war_drive = {}
+    unstable_devices = 0
     server_ip = False
 

@@ -24,6 +24,7 @@ from nsm_database import DataBase, Extensions, Background_Threads
 
 # CONSTANTS
 console = Variables.console
+LOCK    = Variables.LOCK
 #DataBase = DataBase.Bluetooth
 
 
@@ -48,8 +49,8 @@ class Monitor_Bluetooth():
     
     
 
-    @staticmethod
-    def _get_manuf(manuf):
+    @classmethod
+    def _get_manuf(cls, manuf):
         """This will parse and get manuf"""
 
 
@@ -61,7 +62,7 @@ class Monitor_Bluetooth():
         
 
 
-        company = DataBase.get_manufacturer(id=id, data=hex)
+        company = cls.DataBase.get_manufacturer(id=id, data=hex)
 
 
         return company
@@ -79,6 +80,8 @@ class Monitor_Bluetooth():
         c5 = "bold blue"
         table = ""
         timeout = 10
+        cycle = 0
+        unstable_devices = 0
 
         table = Table(title="BLE Driving", title_style="bold red", border_style="bold purple", style="bold purple", header_style="bold red")
         table.add_column("#"); table.add_column("RSSI", style=c2); table.add_column("Mac", style=c3); table.add_column("Manufacturer", style=c5); table.add_column("Local_name"); table.add_column("UUID", style=c3)
@@ -90,10 +93,13 @@ class Monitor_Bluetooth():
 
             while True:
 
+
                 await scanner.start()
                 await asyncio.sleep(5)
                 await scanner.stop()
                 devices = scanner.discovered_devices_and_advertisement_data
+                now     = time.time()
+                cycle   += 1
 
 
 
@@ -107,7 +113,6 @@ class Monitor_Bluetooth():
                         uuid  = adv.service_uuids or False
                         manuf = cls._get_manuf(manuf=adv.manufacturer_data) 
                         vendor = cls.DataBase.get_vendor_main(mac=mac, verbose=False) 
-                        up_time = time.time()
                                         
 
                         data = {
@@ -117,29 +122,103 @@ class Monitor_Bluetooth():
                             "vendor": vendor,
                             "name": name,
                             "uuid": uuid,
-                            "up_time": up_time
                         }
    
+                        
 
-                        cls.live_map[mac] = data
-         
-
-                        if mac not in cls.devices:
+                        if (mac not in cls.live_map):
                             
-                            cls.devices.append(mac)
-                            cls.war_drive[len(cls.devices)] = data
             
-                            console.print(f"{len(cls.devices)}", rssi, mac, manuf, vendor, name, uuid)
+                            cls.live_map[mac] = {
+                                "status": "stable",
+                                "data": data,
+                                "rssi_list": [],
+                                "cycle": cycle,
+                                "stable_count": 0,
+                                "seen_cycles": 1,
+                                "first_seen": now,
+                                "last_seen": now
+                            }
+
+                            cls.devices += 1
+                            console.print(f"{cls.devices}", rssi, mac, manuf, vendor, name, uuid)
+                    
+                        
+                        elif (len(cls.live_map[mac]["rssi_list"])) > (10): cls.live_map[mac]["rssi_list"].pop(0)
+
+                        
+                        with LOCK:
+                            if  cls.live_map[mac]:
+                                cls.live_map[mac]["rssi_list"].append(rssi)
+                                cls.live_map[mac]["seen_cycles"] += 1
+                                cls.live_map[mac]["last_seen"]   = now
+                                cls.live_map[mac]["cycle"]       = cycle
+
+                
+                """
+                low unstable + no drop	normal
+                high unstable + no drop	interference
+                high unstable + big drop	🔥 likely jamming
+                low unstable + big drop	maybe movement / environment
+                """
+
+                
+                for mac, dev in cls.live_map.items():
+                        
+                    use          = f"[bold red][!] unstable connection  - {mac} -  Type:"
+                    weight       = 0
+                    rssi_list    = dev["rssi_list"]
+                    time_missing = now - dev["last_seen"]
+
+
+
+                    if len(rssi_list) >= 3 and max(rssi_list) - min(rssi_list) > 20: 
+                        weight  += 1
+                        console.print(f"{use}[yellow] rssi spike")
+
+                    if dev["cycle"] != cycle: 
+                        weight  += 1
+                        console.print(f"{use}[yellow] missed cycle")
+
+                    if (time_missing > 10): 
+                        weight  += 2
+                        console.print(f"{use}[yellow] missing time")
+                    
+
+                    if weight >= 2:
+                        dev["status"]       = "unstable"
+                        dev["stable_count"] = 0
+                    
+                    else: 
+                        if dev["status"] == "unstable":
+                            dev["stable_count"] += 1
+                            if dev["stable_count"] >= 3: dev["status"] = "stable"
+                    
+
+
+                    if time_missing > 60:
+                        console.print(f"[bold yellow][-] Removing stale device:[/bold yellow] {mac}")
+                        with LOCK: del cls.live_map[mac]
+
+
         
 
                 
 
                 # WILL MAKE A GLOBALIZED SAVE FOR ALL INFO FROM ALL MONITOR METHODS
-                #DataBase.push_results(devices=cls.war_drive, verbose=False)
+                # DataBase.push_results(devices=cls.war_drive, verbose=False)
 
 
                 count = len(devices)
                 Extensions.Controller(current_count=count, server_ip=server_ip)
+                 
+                
+                online_devices = len(cls.live_map)
+                unstable_devices = 0
+                for mac, dev in cls.live_map.items():
+                    if dev["status"] == "unstable": unstable_devices += 1
+                console.print(f"Total Devices: {online_devices}"
+                              f"\nUnstable devices: {unstable_devices} ")
 
 
                         
@@ -147,8 +226,8 @@ class Monitor_Bluetooth():
             console.print(f"\n[bold green][+] Found a total of:[bold yellow] {len(cls.devices)} devices")
 
 
-        except KeyboardInterrupt:  return KeyboardInterrupt
-        except Exception as e:     return Exception
+        except KeyboardInterrupt as e:  console.print(f"[bold red][!] BLE Keyboard Exception Error:[bold yellow] {e}")
+        except Exception as e:     console.print(f"[bold red][!] BLE Exception Error:[bold yellow] {e}")
 
 
         
@@ -157,18 +236,17 @@ class Monitor_Bluetooth():
         """Run from here"""
         
 
-        cls.devices = []
+        cls.devices = 0
         cls.num = 0
 
-        server_ip   = Variables.server_ip
-        cls.live_map    = Variables.live_map
-        cls.war_drive   = Variables.war_drive
+        server_ip    = Variables.server_ip
+        cls.live_map = Variables.live_map
 
 
         try: 
             
             console.print("[yellow][+] Bluetooth/BLE Monitoring Active")
-            asyncio.run(Monitor_Bluetooth._ble_printer(server_ip=server_ip))
+            asyncio.run(cls._ble_printer(server_ip=server_ip))
     
         except KeyboardInterrupt: console.print("\n[bold red]Stopping....")
         except Exception as e: console.print(f"[bold red]Sniffer Exception Error:[bold yellow] {e}")
@@ -401,7 +479,7 @@ class Monitor_Deauth_python():
         #threading.Thread(target=WiFi_Snatcher._sniffer, args=(iface, ), daemon=True).start()
 
 
-# WRAPPER OFF TSHARK
+# Tshark WRAPPER
 class Monitor_Deauth_Tshark():
     """This will be used to monitor for deauth attacks"""
 
@@ -474,13 +552,13 @@ class Monitor_Deauth_Tshark():
                         dst = parts[3]
                         subtype = parts[4]
 
-                    timestamp = datetime.now().strftime("%m/%d/%Y, %H:%M:%S"); last_deauth = now
+                    timestamp = datetime.now().strftime("%m/%d/%Y  -  %H:%M:%S"); last_deauth = now
 
 
                     console.print(f"[bold red][!] Deauth ATTACK Detected![/bold red]"
                                 f"\n{space}[{c3}]Time:[/{c3}] {timestamp}"
-                                f"\n{space}[{c3}]Rate:[/{c3}] {count}"
-                                f"\n{space}[{c3}]Src:[/{c3}] {src} -> {dst}\n"
+                                f"\n{space}[{c3}]Rate:[/{c3}] {count} pkts/sec"
+                                f"\n{space}[{c3}]Attacker:[/{c3}] {src} -> {dst}\n"
                                 )
 
 
@@ -518,5 +596,5 @@ class Monitor_Deauth_Tshark():
 # FOR MODULAR TESTING ONLY
 if __name__ == "__main__":
 
-    Monitor_Deauth_Tshark.main()
+    #Monitor_Deauth_Tshark.main()
     Monitor_Bluetooth.main()
