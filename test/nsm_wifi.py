@@ -406,7 +406,7 @@ class Deauth_Attacker():
 
 
         while True: 
-            sendp(pkts, inter, loop, count, verbose, realtime, iface); console.print(f"[bold green][+] Packets sent")
+            sendp(x=pkts, inter=inter, loop=loop, count=count, verbose=verbose, realtime=realtime, iface=iface); console.print(f"[bold green][+] Packets sent")
             
             if not inter and not loop: time.sleep(1)
 

@@ -11,6 +11,20 @@ import threading
 
 
 
+# MONITOR METHODS
+"""
+monitor_bluetooth
+monitor_deauth
+monitor_evil_twin
+monitor_ssid_count
+
+
+
+"""
+
+
+
+
 class Variables():
     """This will house multi module vars"""
 
@@ -35,10 +49,10 @@ class Variables():
     verbose   = False
 
     
-
-    # =====================
-    # MONITOR MODE ATTACKS
-    # =====================
+     
+    # ================================
+    # WiFi  //   MONITOR MODE ATTACKS
+    # ================================
 
 
     # DEFAULT
@@ -62,4 +76,15 @@ class Variables():
     realtime = None
 
     reasons = [4,5,7,15]
+
+
+
+    # ===============
+    #  Bluetooth/BLE
+    # ===============
+
+
+    live_map  = {}
+    war_drive = {}
+    server_ip = False
 

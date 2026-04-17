@@ -1,19 +1,26 @@
 # THIS WILL BE FOR BLUETOOTH/BLE LOGIC
 
 
+
+#  UI IMPORTS
+from rich.table import Table
+
+
+
 # IMPORTS
 from bleak import BleakClient, BleakScanner
-import asyncio
+import asyncio, time, threading
 
 
 # NSM IMPORTS
 from nsm_vars import Variables
-from nsm_database import DataBase
+from nsm_database import DataBase, Extensions
 
 
 # CONSTANTS
 console = Variables.console
 DataBase = DataBase.Bluetooth
+
 
 
 class Bluetooth():
@@ -51,13 +58,6 @@ class Bluetooth():
         devices = []
         scanner = BleakScanner()
 
-
-        """
-        
-        AdvertisementData(local_name='Smart Light', manufacturer_data={12849: b'345678901'}, 
-        service_uuids=['00001800-0000-1000-8000-00805f9b34fb'], rssi=-61)
-
-        """
 
 
 
@@ -100,4 +100,8 @@ class Bluetooth():
 
 
 
-if __name__ == "__main__": asyncio.run(Bluetooth.sniff_for_clients_in_the_area())
+
+
+if __name__ == "__main__": 
+
+    Monitor_Bluetooth.main()

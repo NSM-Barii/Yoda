@@ -38,7 +38,7 @@ class YodaHandler(SimpleHTTPRequestHandler):
 class Server():
 
     @staticmethod
-    def begin_web_server(local_ip, iface=False, port=8000, dir="../web_modules"):
+    def begin_web_server(local_ip, =False, port=8000, dir="../web_modules"):
 
         time.sleep(0.2)
 
