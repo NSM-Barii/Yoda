@@ -421,13 +421,14 @@ class Monitor_Deauth_Tshark():
         cmd = [
             "tshark",
             "-i", iface,
-            "-l", "-T",
+            "-l", 
+            "-T", "fields",
             "-e", "frame.number",
             "-e", "frame.time_epoch",
             "-e", "wlan.sa",
             "-e", "wlan.da",
             "-e", "wlan.fc.type_subtype",
-            "-Y", "wlan.fc.type_subtype == 0x0c",
+            "-Y", "wlan.fc.type_subtype == 0x0c"
 
         ]
 
@@ -447,32 +448,40 @@ class Monitor_Deauth_Tshark():
         The process variable creates a live session which deauht packets when there detected meaning its a loop in it of itself.
         The conditions only run if a line is printed from the process variable
         """
+        c1 = "bold red"
+        c2 = "bold green"
+        c3 = "bold yellow"
+        
         for line in process.stdout:
 
             count += 1
-
+            space  = "     "
             now = time.time()
+            src = False; dst = False
+            
 
 
             if now - start_time >= 1:
 
                 if (count >= 1) and (last_deauth is not None): 
                    
-
-                    timestamp = datetime.now().strftime("%d/%m/%Y, %H:%M:%S"); last_deauth = now
-                    console.print(f"[bold red][!] Deauth ATTACK Detected! {count} pkt/sec  -  [yellow]Timestamp:[/yellow] {timestamp}")
-
-
                     parts = line.strip().split("\t")
                     
+                    ['20', '1776444991.614093311', '72:35:3d:f8:c7:43', 'ff:ff:ff:ff:ff:ff', '0x000c']
 
-                    console.print(parts)
                     if len(parts) >= 3:
-                        src = parts[0]
-                        dst = parts[1]
-                        subtype = parts[2]
+                        src = parts[2]
+                        dst = parts[3]
+                        subtype = parts[4]
 
-                        console.print(src, dst, subtype)
+                    timestamp = datetime.now().strftime("%m/%d/%Y, %H:%M:%S"); last_deauth = now
+
+
+                    console.print(f"[bold red][!] Deauth ATTACK Detected![/bold red]"
+                                f"\n{space}[{c3}]Time:[/{c3}] {timestamp}"
+                                f"\n{space}[{c3}]Rate:[/{c3}] {count}"
+                                f"\n{space}[{c3}]Src:[/{c3}] {src} -> {dst}\n"
+                                )
 
 
                 
