@@ -4,6 +4,8 @@
 
 # UI IMPORTS
 from rich.table import Table
+from rich.live import Live
+from rich.panel import Panel
 
 
 # NETWORK IMPORTS
@@ -154,15 +156,9 @@ class Monitor_Bluetooth():
                                 cls.live_map[mac]["last_seen"]   = now
                                 cls.live_map[mac]["cycle"]       = cycle
 
-                
-                """
-                low unstable + no drop	normal
-                high unstable + no drop	interference
-                high unstable + big drop	🔥 likely jamming
-                low unstable + big drop	maybe movement / environment
-                """
 
-                
+
+                 
                 for mac, dev in cls.live_map.items():
                         
                     use          = f"[bold red][!] unstable connection  - {mac} -  Type:"
@@ -171,7 +167,8 @@ class Monitor_Bluetooth():
                     time_missing = now - dev["last_seen"]
 
 
-
+                    
+                    # // C++ IS SUPERIOR
                     if len(rssi_list) >= 3 and max(rssi_list) - min(rssi_list) > 20: 
                         weight  += 1
                         console.print(f"{use}[yellow] rssi spike")
