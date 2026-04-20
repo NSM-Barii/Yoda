@@ -582,13 +582,4 @@ class Extensions():
         cls.last_count = data[0]
         cls.last_color = data[2]
 
-    @classmethod
-    def get_status(cls):
-        """Return current threat status for web API"""
-        return {
-            "current_count": cls.last_count,
-            "baseline": round(cls.avg, 2) if cls.avg is not None else 0,
-            "color": cls.last_color or "green",
-            "percent": round(abs(((cls.last_count - (cls.avg or 0)) / (cls.avg or 1)) * 100), 1) if cls.avg else 0
-        }
 
