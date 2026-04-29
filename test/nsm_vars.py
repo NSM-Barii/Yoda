@@ -39,20 +39,25 @@ class Variables():
 
     @classmethod
     def push_event(cls, text):
-        """Text -> TTS"""
+        """
+        Push event to queue for voice notifications.
+        Voice agent will pick this up and speak it via session.say()
 
+        Args:
+            text: Event message to be spoken
+        """
 
         now = time.time()
-
         last = cls.EVENT_TIMES.get(text, 0)
 
-        if now - last < cls.EVENT_COOLDOWN: return
+        if now - last < cls.EVENT_COOLDOWN:
+            return
 
         cls.EVENT_TIMES[text] = now
         cls.EVENT_QUEUE.put(text)
 
 
-    
+
 
     # CONSTANTS
     console = Console()

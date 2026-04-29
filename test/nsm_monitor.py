@@ -191,15 +191,22 @@ class Monitor_Bluetooth():
                             dev["status"] = "unstable"
                             dev["stable_count"] = 0
 
-                    else: 
+                            # Voice notification
+                            vendor = dev["data"].get("vendor") or "Unknown"
+                            Variables.push_event(f"Alert. Unstable BLE device detected. {vendor}")
+
+                    else:
                         if (dev["status"] == "unstable"):
                             dev["stable_count"] += 1
 
-                            if (dev["stable_count"] >= 2): 
+                            if (dev["stable_count"] >= 2):
                                 dev["status"] = "stable"
                                 dev["stable_count"] = 0
                                 unstable_devices.discard(mac)
                                 console.print(f"[bold green][+] Device now stable:[yellow] {mac}")
+
+                                # Voice notification
+                                Variables.push_event(f"Device stabilized")
 
 
 
@@ -589,6 +596,9 @@ class Monitor_Deauth_Tshark():
                                 f"\n{space}[{c3}]Rate:[/{c3}] {count} pkts/sec"
                                 f"\n{space}[{c3}]Attacker:[/{c3}] {src} -> {dst}\n"
                                 )
+
+                    # Voice notification
+                    Variables.push_event(f"Warning. Deauth attack detected. {count} packets per second")
 
 
                 
