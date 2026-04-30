@@ -277,7 +277,6 @@ class Monitor_Bluetooth():
         cls.devices = 0
         cls.num = 0
 
-        server_ip    = Variables.server_ip
         cls.live_map = Variables.live_map_bt
 
 
