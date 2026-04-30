@@ -283,7 +283,7 @@ class Monitor_Bluetooth():
         try: 
             
             console.print("[yellow][+] Bluetooth/BLE Monitoring Activated")
-            asyncio.run(cls._ble_printer(server_ip=server_ip))
+            asyncio.run(cls._ble_printer(server_ip=False))
     
         except KeyboardInterrupt: console.print("\n[bold red]Stopping....")
         except Exception as e: console.print(f"[bold red]Sniffer Exception Error:[bold yellow] {e}")
