@@ -75,8 +75,26 @@ class Variables():
     iface     = "wlan1"  # FOR MONITOR MODE
     subnet    = "192.168.1.0/24"
     ip_router = "192.168.1.1"
-    ip_local  = None
+    ip_local  = False
     verbose   = False
+
+
+    lan_current = 0
+    lan_max     = 0
+    lan_min     = 0
+
+    ble_current  = 0
+    ble_max      = 0
+    ble_min      = 0
+
+    wifi_current = 0
+    wifi_max     = 0
+    wifi_min     = 0
+
+    
+    live_map_lan  = {}
+    live_map_bt   = {}
+    live_map_wifi = {}
 
     
 

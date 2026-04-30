@@ -63,11 +63,7 @@ class Monitor_Bluetooth():
         for key, value in manuf.items():
             id = key; hex = value.hex()
         
-
-
         company = cls.DataBase.get_manufacturer(id=id, data=hex)
-
-
         return company
 
 
@@ -252,12 +248,22 @@ class Monitor_Bluetooth():
                 )
 
 
-                Variables.push_event(text=f"Device count: {total}")
+                Variables.ble_current = total
+
+                if total > Variables.ble_max:
+                    Variables.ble_max = total
+                    console.print(f"[bold green][!] New BLE max:[/bold green] {total} devices")
+                    Variables.push_event(f"New maximum. {total} Bluetooth devices detected")
+
+                if total < Variables.ble_min:
+                    Variables.ble_min = total
+                    console.print(f"[bold red][!] New BLE min:[/bold red] {total} devices")
+                    Variables.push_event(f"Alert. Device count dropped to {total} Bluetooth devices")
 
 
 
         except KeyboardInterrupt as e:  console.print(f"[bold red][!] BLE Keyboard Exception Error:[bold yellow] {e}")
-        except Exception as e:     console.print(f"[bold red][!] BLE Exception Error:[bold yellow] {e}")
+        except Exception as e:          console.print(f"[bold red][!] BLE Exception Error:[bold yellow] {e}")
 
 
     @classmethod
@@ -272,7 +278,7 @@ class Monitor_Bluetooth():
         cls.num = 0
 
         server_ip    = Variables.server_ip
-        cls.live_map = Variables.live_map
+        cls.live_map = Variables.live_map_bt
 
 
         try: 
@@ -284,265 +290,31 @@ class Monitor_Bluetooth():
         except Exception as e: console.print(f"[bold red]Sniffer Exception Error:[bold yellow] {e}")
 
 
+# Tshark WRAPPER 
+class Monitor_WiFi():
+    """This will track WiFi APs and their clients"""
 
-
-
-
-class Monitor_Deauth_python():
-    """This class will be responsible for grabbing surrounding layer 2 traffic <-- snatch"""
 
     DataBase = DataBase.WiFi
 
 
- 
     @classmethod
-    def _sniffer(cls, iface, timeout=5, verbose=False):
-        """This will sniff frames out the air"""
-
-        loops = 0
-
-        console.print(f"[bold green][*] Launching Sniffer Daemon[/bold green] - Mode: {cls.mode}")
-
-
-        while cls.sniff:
-
-            try:
-
-                loops += 1
-                if verbose: console.print(f"[bold yellow]Loop: {loops}")
-
-                sniff(iface=iface, timeout=timeout, store=0, prn=cls._parser); time.sleep(1)
-
-
-            except KeyboardInterrupt as e: console.print(f"[bold yellow][-] Byeeeeee......."); cls.sniff = False
-
-
-            except Exception as e: console.print(f"[bold red][-] Exception Error:[bold yellow] {e}"); cls.sniff = False
-        
-
-
-        console.print(f"[bold red][-] SNIFFER Terminated! - Threads: {cls.thread_count}")
-    
-
-
-    @classmethod
-    def _parser(cls, pkt):
-        """This method will be resposible for parsing said packets that are recieved from _sniffer <-- pass argument"""
-        
-
-        def parser(pkt):
-            
-
-            c1 = "bold green"
-            c2 = "bold blue"
-            c3 = "bold yellow"
-            c4 = "bold red"
-
-            go = False
-            ssid = False
-
-            # ADDR1 == DST
-            # ADDR2 == SRC
-            # ADDR3 == SRC
-            
-            if not cls.sniff: return
-
-
-            if pkt.haslayer(Dot11Deauth) and cls.mode == 1:
-
-                #console.print(pkt)
-
-
-                try:
-
-
-                    addr1 = pkt[Dot11].addr1 
-                    addr2 = pkt[Dot11].addr2 
-
-                    channel  = False
-                    
-                    cls.deauths[addr2]["deauths"] += 1
-                    console.print(cls.deauths)
-                    cls.deauths[addr2]["dst"] = {"src": addr2, 
-                                                 "dst": addr1}
-                    console.print(f"[{c4}][*] Deauth Attack detected[/{c4}] - Src: {addr2}  Dst: {addr1} - Channel: {channel}")
-                    console.print(cls.deauths)
-
-
-                except Exception as e: console.print(f"[bold red][-] Exception Error:[bold yellow] {e   }")
-
-
-            elif pkt.haslayer(Dot11Beacon) and cls.mode == 2:
-
-
-                try:
-                    addr1 = pkt[Dot11].addr1 if pkt[Dot11].addr1 != "ff:ff:ff:ff:ff:ff" else False
-                    addr2 = pkt[Dot11].addr2 if pkt[Dot11].addr2 != "ff:ff:ff:ff:ff:ff" else False
-
-                    ssid        = pkt[Dot11Elt].info.decode(errors="ignore") or "Hidden SSID"
-                    vendor      = cls.DataBase.get_vendor_main(mac=addr2)
-                    rssi        = cls.DataBase.get_rssi(pkt=pkt, format=False)
-                    channel     = cls.DataBase.get_channel(pkt=pkt)
-                    encryption  = cls.DataBase.get_encryption(pkt=pkt)
-                    frequency   = cls.DataBase.get_frequency(freq=pkt[RadioTap].ChannelFrequency)
-
-
-
-                    if cls.hide:
-                        t = [s for s in ssid]
-                        if len(t) > 4: 
-                            ssid = (f"{t[0]}{t[1]}{t[2]}{t[3]}")
-                
-
-                except Exception as e: console.print(f"[bold red][-] Parse Error:[bold yelow] {e}"); cls.sniff = False  
-                
-
-                try:
-                    
-                    if not any(stored_ssid == ssid for stored_ssid, _ in cls.ssids):
-                        cls.master[ssid] = {
-                            "rssi": rssi,
-                            "mac": addr2,
-                            "encryption": encryption,
-                            "frequency": frequency,
-                            "channel": channel,
-                            "vendor": vendor,
-                            "traffic": 0,
-                            "clients": []
-                        }
-
-                        cls.ssids.append((ssid, addr2))
-                        console.print(f"[bold green][+] SSID:[bold yellow] {ssid} --> {addr2}")
-                    
-                except Exception as e: console.print(f"[bold red][-] Beacon Error: {e}"); cls.sniff = False
-
-
-
-            elif pkt.haslayer(Dot11) and pkt.type == 2 and cls.mode == 2: 
-
-
-                addr1 = pkt[Dot11].addr1 if pkt[Dot11].addr1 != "ff:ff:ff:ff:ff:ff" else False
-                addr2 = pkt[Dot11].addr2 if pkt[Dot11].addr2 != "ff:ff:ff:ff:ff:ff" else False
-
-
-                for id, id_mac in cls.ssids:
-                    
-                    if id_mac == addr2 or id_mac == addr1: go = True; ssid = id
-                    #print(id, id_mac, go)
-
-                    if go:
-                        cls.master[id]["traffic"] +=1
-
-            
-                if not go: return
-            
-
-                vendor  = cls.DataBase.get_vendor_main(mac=addr1 or addr2)
-                channel = cls.DataBase.get_channel(pkt=pkt)
-                #console.print(vendor, channel)
-                
-          
-                try:
-
-                    if addr1 not in cls.macs and addr1 and ssid:
-                        console.print("heyyy")
-                            
-                        data = (
-                            addr1,
-                            channel,
-                            vendor,
-                        )
-                        
-                        cls.master[ssid]["clients"].append(data)
-                        cls.macs.append(addr1)
-
-
-                        console.print(f"[bold green][+] addr1: {addr1} -> ")
-                    
-
-                    
-                    if addr2 not in cls.macs and addr2 and ssid:
-                        
-                        data = (
-                            addr2,
-                            channel,
-                            vendor,
-                        )
-                        
-                        cls.master[ssid]["clients"].append(data)
-                        cls.macs.append(addr2)
-
-
-                        console.print(f"[bold green][+] addr2: {addr2} -> ")
-                    
-                        #console.print(cls.master)
-                
-
-                except Exception as e: console.print(f"[bold red][-] GO Error: {e}"); cls.sniff = False
-
- 
-        if not cls.sniff: return Exception 
-        #print(pkt)
-        #cls.executor.submit(parser, pkt); cls.thread_count += 1
-        #parser(pkt=pkt)
-
-                
-    
-    @classmethod
-                
-    def main(cls):
-        """This will run class wide logic"""
-
-
-        # VARS
-
-
-        cls.hide = False
-        cls.thread_count = 0
-        cls.sniff = True
-        cls.deauths = {}
-        cls.master = {}
-        cls.macs = []
-        cls.ssids = []
-        
-        iface    = Variables.iface
-        cls.mode = 1
-
-
-        Background_Threads.channel_hopper()
-        cls._sniffer(iface=iface)
-        #threading.Thread(target=WiFi_Snatcher._sniffer, args=(iface, ), daemon=True).start()
-
-
-# Tshark WRAPPER
-class Monitor_Deauth_Tshark():
-    """This will be used to monitor for deauth attacks"""
-
-
-    @classmethod
-    def _sniffer(cls, iface):
-        """This will be used to sniff for deauth frames"""
-
-
-        count = 0
-        total = 0
-        last_deauth = time.time()
-        start_time  = time.time()
-
+    def _pkt_handler(cls, iface):
+        """This will sniff for beacons and data frames to track APs and clients"""
 
 
         cmd = [
             "tshark",
             "-i", iface,
-            "-l", 
+            "-l",
             "-T", "fields",
-            "-e", "frame.number",
-            "-e", "frame.time_epoch",
+            "-e", "wlan.fc.type_subtype",
             "-e", "wlan.sa",
             "-e", "wlan.da",
-            "-e", "wlan.fc.type_subtype",
-            "-Y", "wlan.fc.type_subtype == 0x0c"
-
+            "-e", "wlan.bssid",
+            "-e", "wlan.ssid",
+            "-e", "radiotap.dbm_antsignal",
+            "-Y", "wlan.fc.type_subtype == 0x08 || wlan.fc.type == 2 || wlan.fc.type_subtype == 0x0c"
         ]
 
 
@@ -551,82 +323,208 @@ class Monitor_Deauth_Tshark():
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True
-            
         )
 
 
-         
-
-        """
-        The process variable creates a live session which deauht packets when there detected meaning its a loop in it of itself.
-        The conditions only run if a line is printed from the process variable
-        """
         c1 = "bold red"
         c2 = "bold green"
         c3 = "bold yellow"
-        
-        for line in process.stdout:
+        cycle = 0
+        unstable_aps = set()
+        last_check = time.time()
+        deauth_tracker = {}
+        last_deauth_check = time.time()
 
-            count += 1
-            space  = "     "
-            now = time.time()
-            src = False; dst = False
-            console.print("f")
-            
+        try:
 
+            for line in process.stdout:
 
-            if now - start_time >= 1:
+                parts = line.strip().split("\t")
+                if len(parts) < 4: continue
 
-                if (count >= 1) and (last_deauth is not None): 
-                   
-                    parts = line.strip().split("\t")
-                    
-                    ['20', '1776444991.614093311', '72:35:3d:f8:c7:43', 'ff:ff:ff:ff:ff:ff', '0x000c']
-
-                    if len(parts) >= 3:
-                        src = parts[2]
-                        dst = parts[3]
-                        subtype = parts[4]
-
-                    timestamp = datetime.now().strftime("%m/%d/%Y  -  %H:%M:%S"); last_deauth = now
+                frame_type = parts[0]
+                src = parts[1] if len(parts) > 1 else None
+                dst = parts[2] if len(parts) > 2 else None
+                bssid = parts[3] if len(parts) > 3 else None
+                ssid = parts[4] if len(parts) > 4 and parts[4] else "Hidden"
+                rssi = parts[5] if len(parts) > 5 and parts[5] else None
+                now = time.time()
 
 
-                    console.print(f"[bold red][!] Deauth ATTACK Detected![/bold red]"
-                                f"\n{space}[{c3}]Time:[/{c3}] {timestamp}"
-                                f"\n{space}[{c3}]Rate:[/{c3}] {count} pkts/sec"
-                                f"\n{space}[{c3}]Attacker:[/{c3}] {src} -> {dst}\n"
-                                )
+                if frame_type == "0x0008":
 
-                    # Voice notification
-                    Variables.push_event(f"Warning. Deauth attack detected. {count} packets per second")
+                    try:
+                        rssi_val = int(rssi) if rssi and rssi != "N/A" else -100
+                    except: rssi_val = -100
+
+                    if bssid not in cls.live_map:
+
+                        vendor = cls.DataBase.get_vendor_main(mac=bssid, verbose=False)
+
+                        cls.live_map[bssid] = {
+                            "status": "stable",
+                            "data": {"ssid": ssid, "rssi": rssi_val, "vendor": vendor},
+                            "unstable_hits": 0,
+                            "seen_cycles": 1,
+                            "first_seen": now,
+                            "last_seen": now,
+                            "clients": set(),
+                            "client_max": 0,
+                            "client_min": 0
+                        }
+
+                        cls.aps += 1
+                        console.print(f"{cls.aps}", rssi_val, bssid, ssid, vendor)
+
+                    cls.live_map[bssid]["seen_cycles"] += 1
+                    cls.live_map[bssid]["last_seen"] = now
 
 
-                
-                total += count; count = 0
-                start_time = now
-            
-            
+                elif frame_type.startswith("0x") and bssid:
+                    if bssid in cls.live_map:
 
-            # THIS WILL NOT WORK
-            if (last_deauth is not None) and (now - last_deauth >= 5):
-                
-                console.print(now - last_deauth)
-            
-                console.print(f"\n[bold green][+] Deauth Attack ended! Total Deauth packets sniffed: {total}")
-                last_deauth = None
+                        client_mac = src if src != bssid else dst
+
+                        if client_mac and client_mac not in cls.live_map[bssid]["clients"] and client_mac != "ff:ff:ff:ff:ff:ff":
+                            cls.live_map[bssid]["clients"].add(client_mac)
+                            vendor = cls.DataBase.get_vendor_main(mac=client_mac, verbose=False)
+
+                            console.print(f"[{c3}][*] New Client:[/{c3}] {client_mac} -> AP: {cls.live_map[bssid]['data']['ssid']} ({vendor})")
+
+                            ap_name = cls.live_map[bssid]['data']['ssid']
+                            Variables.push_event(f"New client connected to {ap_name}")
 
 
-    
+                elif frame_type == "0x000c":
+
+                    if src not in deauth_tracker:
+                        deauth_tracker[src] = {"count": 0, "start_time": now, "dst": set()}
+
+                    deauth_tracker[src]["count"] += 1
+                    deauth_tracker[src]["dst"].add(dst)
+
+                    time_elapsed = now - deauth_tracker[src]["start_time"]
+
+                    if time_elapsed >= 1 and deauth_tracker[src]["count"] >= 5:
+                        rate = deauth_tracker[src]["count"] / time_elapsed
+                        targets = len(deauth_tracker[src]["dst"])
+
+                        console.print(f"[{c1}][!] Deauth Attack Detected![/{c1}]"
+                                    f"\n     [{c3}]Attacker:[/{c3}] {src}"
+                                    f"\n     [{c3}]Rate:[/{c3}] {int(rate)} pkts/sec"
+                                    f"\n     [{c3}]Targets:[/{c3}] {targets}\n")
+
+                        Variables.push_event(f"Warning. Deauth attack detected. {int(rate)} packets per second from {src}")
+
+                        deauth_tracker[src]["count"] = 0
+                        deauth_tracker[src]["start_time"] = now
+
+
+                if now - last_deauth_check >= 10:
+                    for src in list(deauth_tracker.keys()):
+                        if now - deauth_tracker[src]["start_time"] > 10:
+                            del deauth_tracker[src]
+                    last_deauth_check = now
+
+
+                if now - last_check >= 5:
+                    cycle += 1
+
+                    for bssid, dev in list(cls.live_map.items()):
+
+                        time_missing = now - dev["last_seen"]
+                        client_count = len(dev["clients"])
+                        ssid_name = dev["data"]["ssid"]
+
+                        if client_count > dev["client_max"]:
+                            dev["client_max"] = client_count
+                            console.print(f"[bold green][!] {ssid_name} new client max:[/bold green] {client_count}")
+                            Variables.push_event(f"New maximum. {ssid_name} has {client_count} clients")
+
+                        if client_count < dev["client_min"]:
+                            dev["client_min"] = client_count
+                            console.print(f"[bold red][!] {ssid_name} new client min:[/bold red] {client_count}")
+                            Variables.push_event(f"Alert. {ssid_name} client count dropped to {client_count}")
+
+                        if time_missing > 10:
+                            if dev["status"] != "offline":
+                                console.print(f"[bold red][!] AP Offline:[yellow] {ssid_name} ({bssid})")
+                                dev["status"] = "offline"
+                                Variables.push_event(f"Alert. Access point offline. {ssid_name}")
+                        else:
+                            if dev["status"] == "offline":
+                                console.print(f"[bold green][+] AP Back Online:[yellow] {ssid_name} ({bssid})")
+                                dev["status"] = "stable"
+                                unstable_aps.discard(bssid)
+                                Variables.push_event(f"Access point back online. {ssid_name}")
+
+                        if time_missing > 30:
+                            console.print(f"[bold yellow][-] Removing stale AP:[/bold yellow] {bssid}")
+                            unstable_aps.discard(bssid)
+                            del cls.live_map[bssid]
+
+
+                    total = len(cls.live_map) or 1
+                    unstables = len({bssid for bssid in unstable_aps if bssid in cls.live_map})
+                    unstable_ratio = unstables / total
+                    unstable_pct = round(unstable_ratio * 100, 2)
+
+                    console.print(f"[bold yellow]Session APs:[/bold yellow] {total}  -  [bold yellow]Unstable:[/bold yellow] {unstables} ({unstable_pct}%)")
+
+                    Variables.wifi_current = total
+
+                    if total > Variables.wifi_max:
+                        Variables.wifi_max = total
+                        console.print(f"[bold green][!] New WiFi max:[/bold green] {total} APs")
+                        Variables.push_event(f"New maximum. {total} WiFi access points detected")
+
+                    if total < Variables.wifi_min:
+                        Variables.wifi_min = total
+                        console.print(f"[bold red][!] New WiFi min:[/bold red] {total} APs")
+                        Variables.push_event(f"Alert. Access point count dropped to {total}")
+
+                    last_check = now
+
+        except KeyboardInterrupt as e: console.print(f"[bold red][!] WiFi Keyboard Exception Error:[bold yellow] {e}")
+        except Exception as e: console.print(f"[bold red][!] WiFi Exception Error:[bold yellow] {e}")
+
+
+
     @classmethod
     def main(cls):
         """This will run class wide logic"""
 
-
+        cls.aps = 0
+        cls.live_map = Variables.live_map_wifi
         iface = Variables.iface
-        console.print(iface)
-        
-        console.print("[yellow][+] Deauth Monitoring Active")
-        cls._sniffer(iface=iface)
+
+        try:
+            console.print("[yellow][+] WiFi AP & Client Monitoring Active")
+            cls._pkt_handler(iface=iface)
+
+        except KeyboardInterrupt: console.print("\n[bold red]Stopping....")
+        except Exception as e: console.print(f"[bold red]WiFi Monitor Exception Error:[bold yellow] {e}")
+
+
+
+
+class Monitor_Runner():
+    """This class will run module classess"""
+
+
+    @staticmethod
+    def main():
+        """Run module classess"""
+
+
+
+        threading.Thread(target=Monitor_Bluetooth.main, args=(), daemon=True).start()
+
+        threading.Thread(target=Monitor_WiFi.main,      args=(), daemon=True).start()
+
+
+
+        while True: time.sleep(1)
 
 
 
@@ -634,7 +532,8 @@ class Monitor_Deauth_Tshark():
 
 
 # FOR MODULAR TESTING ONLY
-if __name__ == "__main__":  
-
-    Monitor_Deauth_Tshark.main()
-    Monitor_Bluetooth.main()
+if __name__ == "__main__":
+    
+    Monitor_Runner.main()
+    #Monitor_WiFi.main()
+    # Monitor_Bluetooth.main()
