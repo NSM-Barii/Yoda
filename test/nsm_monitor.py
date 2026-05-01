@@ -306,14 +306,17 @@ class Monitor_WiFi():
             "tshark",
             "-i", iface,
             "-l",
+            "-Y", "wlan.fc.type_subtype == 0x04 || wlan.fc.type_subtype == 0x08 || wlan.fc.type == 2 || wlan.fc.type_subtype == 0x0c",
             "-T", "fields",
-            "-e", "wlan.fc.type_subtype",
-            "-e", "wlan.sa",
-            "-e", "wlan.da",
-            "-e", "wlan.bssid",
+            "-e", "frame.time_epoch",
+            "-e", "wlan.ta",
+            "-e", "wlan.ra",
             "-e", "wlan.ssid",
             "-e", "radiotap.dbm_antsignal",
-            "-Y", "wlan.fc.type_subtype == 0x08 || wlan.fc.type == 2 || wlan.fc.type_subtype == 0x0c"
+            "-e", "wlan_radio.channel",
+            "-e", "wlan_radio.frequency",
+            "-e", "wlan.fc.type_subtype",
+            "-e", "wlan.seq"
         ]
 
 
@@ -339,30 +342,34 @@ class Monitor_WiFi():
             for line in process.stdout:
 
                 parts = line.strip().split("\t")
-                if len(parts) < 4: continue
+                if len(parts) < 9: continue
 
-                frame_type = parts[0]
-                src = parts[1] if len(parts) > 1 else None
-                dst = parts[2] if len(parts) > 2 else None
-                bssid = parts[3] if len(parts) > 3 else None
-                ssid = parts[4] if len(parts) > 4 and parts[4] else "Hidden"
-                rssi = parts[5] if len(parts) > 5 and parts[5] else None
+                time_epoch = parts[0]
+                src        = parts[1]
+                dst        = parts[2]
+                raw_ssid   = parts[3].strip() or False
+                rssi       = max((int(x) for x in parts[4].split(",") if x), default=-100)
+                channel    = parts[5]
+                freq       = parts[6]
+                frame_type = parts[7]
+                seq        = parts[8]
+
+                if not src or src == "ff:ff:ff:ff:ff:ff": continue
+
                 now = time.time()
 
 
-                if frame_type == "0x0008":
+                if frame_type in ("0x0008", "0x0004"):
 
-                    try:
-                        rssi_val = int(rssi) if rssi and rssi != "N/A" else -100
-                    except: rssi_val = -100
+                    ssid = raw_ssid if raw_ssid else "Hidden"
 
-                    if bssid not in cls.live_map:
+                    if src not in cls.live_map:
 
-                        vendor = cls.DataBase.get_vendor_main(mac=bssid, verbose=False)
+                        vendor = cls.DataBase.get_vendor_main(mac=src, verbose=False)
 
-                        cls.live_map[bssid] = {
+                        cls.live_map[src] = {
                             "status": "stable",
-                            "data": {"ssid": ssid, "rssi": rssi_val, "vendor": vendor},
+                            "data": {"ssid": ssid, "rssi": rssi, "vendor": vendor, "channel": channel, "freq": freq},
                             "unstable_hits": 0,
                             "seen_cycles": 1,
                             "first_seen": now,
@@ -373,25 +380,10 @@ class Monitor_WiFi():
                         }
 
                         cls.aps += 1
-                        console.print(f"{cls.aps}", rssi_val, bssid, ssid, vendor)
+                        console.print(f"{cls.aps}", rssi, src, ssid, vendor)
 
-                    cls.live_map[bssid]["seen_cycles"] += 1
-                    cls.live_map[bssid]["last_seen"] = now
-
-
-                elif frame_type.startswith("0x") and bssid:
-                    if bssid in cls.live_map:
-
-                        client_mac = src if src != bssid else dst
-
-                        if client_mac and client_mac not in cls.live_map[bssid]["clients"] and client_mac != "ff:ff:ff:ff:ff:ff":
-                            cls.live_map[bssid]["clients"].add(client_mac)
-                            vendor = cls.DataBase.get_vendor_main(mac=client_mac, verbose=False)
-
-                            console.print(f"[{c3}][*] New Client:[/{c3}] {client_mac} -> AP: {cls.live_map[bssid]['data']['ssid']} ({vendor})")
-
-                            ap_name = cls.live_map[bssid]['data']['ssid']
-                            Variables.push_event(f"New client connected to {ap_name}")
+                    cls.live_map[src]["seen_cycles"] += 1
+                    cls.live_map[src]["last_seen"] = now
 
 
                 elif frame_type == "0x000c":
@@ -417,6 +409,21 @@ class Monitor_WiFi():
 
                         deauth_tracker[src]["count"] = 0
                         deauth_tracker[src]["start_time"] = now
+
+
+                else:
+
+                    ap_mac = src if src in cls.live_map else (dst if dst in cls.live_map else None)
+                    client_mac = dst if ap_mac == src else src
+
+                    if ap_mac and client_mac and client_mac != "ff:ff:ff:ff:ff:ff":
+                        if client_mac not in cls.live_map[ap_mac]["clients"]:
+                            cls.live_map[ap_mac]["clients"].add(client_mac)
+                            vendor = cls.DataBase.get_vendor_main(mac=client_mac, verbose=False)
+
+                            ap_name = cls.live_map[ap_mac]['data']['ssid']
+                            console.print(f"[{c3}][*] New Client:[/{c3}] {client_mac} -> AP: {ap_name} ({vendor})")
+                            Variables.push_event(f"New client connected to {ap_name}")
 
 
                 if now - last_deauth_check >= 10:
@@ -499,6 +506,7 @@ class Monitor_WiFi():
 
         try:
             console.print("[yellow][+] WiFi AP & Client Monitoring Active")
+            Background_Threads.channel_hopper()
             cls._pkt_handler(iface=iface)
 
         except KeyboardInterrupt: console.print("\n[bold red]Stopping....")
