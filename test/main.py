@@ -10,9 +10,8 @@ Usage:
     python main.py --full             # Everything (MCP + Monitoring + Voice)
 """
 
-import threading
-import sys
-import time
+import threading, time, sys, argparse
+
 
 # NSM IMPORTS
 from nsm_vars import Variables
