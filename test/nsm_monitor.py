@@ -332,7 +332,6 @@ class Monitor_WiFi():
         c2 = "bold green"
         c3 = "bold yellow"
         cycle = 0
-        unstable_aps = set()
         last_check = time.time()
         deauth_tracker = {}
         last_deauth_check = time.time()
@@ -370,7 +369,6 @@ class Monitor_WiFi():
                         cls.live_map[src] = {
                             "status": "stable",
                             "data": {"ssid": ssid, "rssi": rssi, "vendor": vendor, "channel": channel, "freq": freq},
-                            "unstable_hits": 0,
                             "seen_cycles": 1,
                             "first_seen": now,
                             "last_seen": now,
@@ -452,7 +450,7 @@ class Monitor_WiFi():
                             console.print(f"[bold red][!] {ssid_name} new client min:[/bold red] {client_count}")
                             Variables.push_event(f"Alert. {ssid_name} client count dropped to {client_count}")
 
-                        if time_missing > 10:
+                        if time_missing > 20:
                             if dev["status"] != "offline":
                                 console.print(f"[bold red][!] AP Offline:[yellow] {ssid_name} ({bssid})")
                                 dev["status"] = "offline"
@@ -461,21 +459,16 @@ class Monitor_WiFi():
                             if dev["status"] == "offline":
                                 console.print(f"[bold green][+] AP Back Online:[yellow] {ssid_name} ({bssid})")
                                 dev["status"] = "stable"
-                                unstable_aps.discard(bssid)
                                 Variables.push_event(f"Access point back online. {ssid_name}")
 
-                        if time_missing > 30:
+                        if time_missing > 40:
                             console.print(f"[bold yellow][-] Removing stale AP:[/bold yellow] {bssid}")
-                            unstable_aps.discard(bssid)
                             del cls.live_map[bssid]
 
 
                     total = len(cls.live_map) or 1
-                    unstables = len({bssid for bssid in unstable_aps if bssid in cls.live_map})
-                    unstable_ratio = unstables / total
-                    unstable_pct = round(unstable_ratio * 100, 2)
 
-                    console.print(f"[bold yellow]Session APs:[/bold yellow] {total}  -  [bold yellow]Unstable:[/bold yellow] {unstables} ({unstable_pct}%)")
+                    console.print(f"[bold yellow]Session APs:[/bold yellow] {total}")
 
                     Variables.wifi_current = total
 
