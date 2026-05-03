@@ -533,7 +533,7 @@ class Monitor_WiFi():
 
         try:
             data = ("[yellow][+] WiFi AP & Client Monitoring Active")
-            Variables.tui.call_from_thread(Variables.tui.push_data, "#output", data)
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
             Background_Threads.channel_hopper()
             cls._pkt_handler(iface=iface)
 

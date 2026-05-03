@@ -25,11 +25,11 @@ class TUI(App):
 
     CSS = """
     #up {
-        height: 80%;
+        height: 50%;
     }
 
     #bottom {
-        height: 30%;
+        height: 50%;
     }
 
     #ble {
@@ -42,20 +42,16 @@ class TUI(App):
         border: round green;
     }
 
-    #t1 {
+    #lan {
         width: 1fr;
-        border: round blue;
-    }
-
-    #t2 {
-        width: 1fr;
-        border: round blue;
+        border: round green;
     }
 
     #output {
-        height: 30%;
-        border: round yellow;
+        width: 1fr;
+        border: round red;
     }
+
     """
 
 
@@ -65,14 +61,15 @@ class TUI(App):
 
 
         yield Header(id="yoda")
+
         with Horizontal(id='up'):
             yield RichLog(id='ble', markup=True)
             yield RichLog(id='wifi', markup=True)
-        #with Horizontal(id='bottom'):
-            #yield RichLog(id='t1', markup=True)
-            #yield RichLog(id='t2', markup=True)
-    
-        yield RichLog(id='output', markup=True)
+        
+        with Horizontal(id="bottom"):
+            yield RichLog(id="lan", markup=True)
+            yield RichLog(id="output", markup=True)
+
         yield Footer()
         
 
@@ -80,10 +77,10 @@ class TUI(App):
         """This will add shit to created instances"""
 
 
-        self.query_one('#ble', RichLog).border_title = "Bluetooth/BLE"
-        self.query_one('#wifi', RichLog).border_title = "WiFi"
-        #self.query_one('#t1', RichLog).border_title = "t1"
-        #self.query_one('#t2', RichLog).border_title = "t2"
+        self.query_one('#ble', RichLog).border_title    = "Bluetooth/BLE"
+        self.query_one('#wifi', RichLog).border_title   = "WiFi"
+        self.query_one('#lan', RichLog).border_title    = "LAN"
+        self.query_one('#output', RichLog).border_title = "Output"
         Variables.tui = self
 
         Monitor_Runner.main()
