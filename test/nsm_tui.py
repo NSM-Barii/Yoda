@@ -25,7 +25,7 @@ class TUI(App):
 
     CSS = """
     #up {
-        height: 40%;
+        height: 80%;
     }
 
     #bottom {
