@@ -93,8 +93,6 @@ class TUI(App):
     def push_data(self, id, data):
         """This will be used to push data to RichLog"""
         
-        time.sleep(2)
-        id = "#ble"; data="how"
         self.query_one(str(id), RichLog).write(data)
 
 
