@@ -10,7 +10,6 @@ import threading, queue, time
 
 
 
-
 # MONITOR METHODS
 """
 monitor_bluetooth
@@ -60,6 +59,7 @@ class Variables():
 
 
     # CONSTANTS
+    tui   = False
     console = Console()
     mcp  = FastMCP("Yoda")
     LOCK = threading.RLock()
@@ -70,7 +70,6 @@ class Variables():
     table = Table(title="Developed by NSM Barii", style="bold purple", border_style="bold red", title_style="bold purple", header_style="bold purple")
     refresh_per_second = 1
     
-
     
     iface     = "wlan1"  # FOR MONITOR MODE
     subnet    = "192.168.1.0/24"

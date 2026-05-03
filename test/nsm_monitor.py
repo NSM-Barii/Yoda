@@ -141,15 +141,17 @@ class Monitor_Bluetooth():
                             }
 
                             cls.devices += 1
-                            console.print(f"{cls.devices}", rssi, mac, manuf, vendor, name, uuid)
+                            #console.print(f"{cls.devices}", rssi, mac, manuf, vendor, name, uuid)
+                            data = (f"{cls.devices}", rssi, mac, manuf, vendor, name, uuid)
+                            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                     
                         
-
 
                         cls.live_map[mac]["rssi_list"].append(rssi)
                         cls.live_map[mac]["seen_cycles"] += 1
                         cls.live_map[mac]["last_seen"]   = now
                         cls.live_map[mac]["cycle"]       = cycle
+
 
                 for mac, dev in list(cls.live_map.items()):
                         
@@ -163,7 +165,8 @@ class Monitor_Bluetooth():
                     # // C++ IS SUPERIOR
                     if len(rssi_list) >= 3 and max(rssi_list) - min(rssi_list) > 30: 
                         weight += 1
-                        console.print(f"{use}[yellow] rssi spike")
+                        data = (f"{use}[yellow] rssi spike")
+                        Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
 
                     if (time_missing > 5): 
                         weight += 1
@@ -171,7 +174,8 @@ class Monitor_Bluetooth():
 
                     if (time_missing > 10): 
                         weight += 2
-                        console.print(f"{use}[yellow] long time gap")
+                        data = (f"{use}[yellow] long time gap")
+                        Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
 
 
                     if (weight >= 2): dev["unstable_hits"] += 1
@@ -199,7 +203,8 @@ class Monitor_Bluetooth():
                                 dev["status"] = "stable"
                                 dev["stable_count"] = 0
                                 unstable_devices.discard(mac)
-                                console.print(f"[bold green][+] Device now stable:[yellow] {mac}")
+                                data = (f"[bold green][+] Device now stable:[yellow] {mac}")
+                                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
 
                                 # Voice notification
                                 Variables.push_event(f"Device stabilized")
@@ -213,7 +218,8 @@ class Monitor_Bluetooth():
 
 
                     if time_missing > 30:
-                        console.print(f"[bold yellow][-] Removing stale device:[/bold yellow] {mac}")
+                        data = (f"[bold yellow][-] Removing stale device:[/bold yellow] {mac}")
+                        Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                         unstable_devices.discard(mac)
                         del cls.live_map[mac]
 
@@ -252,18 +258,24 @@ class Monitor_Bluetooth():
 
                 if total > Variables.ble_max:
                     Variables.ble_max = total
-                    console.print(f"[bold green][!] New BLE max:[/bold green] {total} devices")
+                    data = (f"[bold green][!] New BLE max:[/bold green] {total} devices")
+                    Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                     Variables.push_event(f"New maximum. {total} Bluetooth devices detected")
 
                 if total < Variables.ble_min:
                     Variables.ble_min = total
-                    console.print(f"[bold red][!] New BLE min:[/bold red] {total} devices")
+                    data = (f"[bold red][!] New BLE min:[/bold red] {total} devices")
+                    Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                     Variables.push_event(f"Alert. Device count dropped to {total} Bluetooth devices")
 
 
 
-        except KeyboardInterrupt as e:  console.print(f"[bold red][!] BLE Keyboard Exception Error:[bold yellow] {e}")
-        except Exception as e:          console.print(f"[bold red][!] BLE Exception Error:[bold yellow] {e}")
+        except KeyboardInterrupt as e:  
+            data = (f"[bold red][!] BLE Keyboard Exception Error:[bold yellow] {e}")
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
+        except Exception as e:          
+            data = (f"[bold red][!] BLE Exception Error:[bold yellow] {e}")
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
 
 
     @classmethod
@@ -282,11 +294,16 @@ class Monitor_Bluetooth():
 
         try: 
             
-            console.print("[yellow][+] Bluetooth/BLE Monitoring Activated")
+            data = ("[yellow][+] Bluetooth/BLE Monitoring Activated")
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
             asyncio.run(cls._ble_printer(server_ip=False))
     
-        except KeyboardInterrupt: console.print("\n[bold red]Stopping....")
-        except Exception as e: console.print(f"[bold red]Sniffer Exception Error:[bold yellow] {e}")
+        except KeyboardInterrupt: 
+            data = ("\n[bold red]Stopping....")
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
+        except Exception as e: 
+            data = (f"[bold red]Sniffer Exception Error:[bold yellow] {e}")
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
 
 
 # Tshark WRAPPER 
@@ -378,7 +395,9 @@ class Monitor_WiFi():
                         }
 
                         cls.aps += 1
-                        console.print(f"{cls.aps}", rssi, src, ssid, vendor)
+                        data = (f"{cls.aps}", rssi, src, ssid, vendor)
+                        Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
+
 
                     cls.live_map[src]["seen_cycles"] += 1
                     cls.live_map[src]["last_seen"] = now
@@ -398,10 +417,12 @@ class Monitor_WiFi():
                         rate = deauth_tracker[src]["count"] / time_elapsed
                         targets = len(deauth_tracker[src]["dst"])
 
-                        console.print(f"[{c1}][!] Deauth Attack Detected![/{c1}]"
+                        data = (f"[{c1}][!] Deauth Attack Detected![/{c1}]"
                                     f"\n     [{c3}]Attacker:[/{c3}] {src}"
                                     f"\n     [{c3}]Rate:[/{c3}] {int(rate)} pkts/sec"
                                     f"\n     [{c3}]Targets:[/{c3}] {targets}\n")
+                        
+                        Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
 
                         Variables.push_event(f"Warning. Deauth attack detected. {int(rate)} packets per second from {src}")
 
@@ -420,7 +441,8 @@ class Monitor_WiFi():
                             vendor = cls.DataBase.get_vendor_main(mac=client_mac, verbose=False)
 
                             ap_name = cls.live_map[ap_mac]['data']['ssid']
-                            console.print(f"[{c3}][*] New Client:[/{c3}] {client_mac} -> AP: {ap_name} ({vendor})")
+                            data = (f"[{c3}][*] New Client:[/{c3}] {client_mac} -> AP: {ap_name} ({vendor})")
+                            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                             Variables.push_event(f"New client connected to {ap_name}")
 
 
@@ -432,6 +454,7 @@ class Monitor_WiFi():
 
 
                 if now - last_check >= 5:
+
                     cycle += 1
 
                     for bssid, dev in list(cls.live_map.items()):
@@ -442,50 +465,61 @@ class Monitor_WiFi():
 
                         if client_count > dev["client_max"]:
                             dev["client_max"] = client_count
-                            console.print(f"[bold green][!] {ssid_name} new client max:[/bold green] {client_count}")
+                            data = (f"[bold green][!] {ssid_name} new client max:[/bold green] {client_count}")
+                            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                             Variables.push_event(f"New maximum. {ssid_name} has {client_count} clients")
 
                         if client_count < dev["client_min"]:
                             dev["client_min"] = client_count
-                            console.print(f"[bold red][!] {ssid_name} new client min:[/bold red] {client_count}")
+                            data = (f"[bold red][!] {ssid_name} new client min:[/bold red] {client_count}")
+                            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                             Variables.push_event(f"Alert. {ssid_name} client count dropped to {client_count}")
 
                         if time_missing > 20:
                             if dev["status"] != "offline":
-                                console.print(f"[bold red][!] AP Offline:[yellow] {ssid_name} ({bssid})")
+                                data = (f"[bold red][!] AP Offline:[yellow] {ssid_name} ({bssid})")
+                                Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                                 dev["status"] = "offline"
                                 Variables.push_event(f"Alert. Access point offline. {ssid_name}")
                         else:
                             if dev["status"] == "offline":
-                                console.print(f"[bold green][+] AP Back Online:[yellow] {ssid_name} ({bssid})")
+                                data = (f"[bold green][+] AP Back Online:[yellow] {ssid_name} ({bssid})")
+                                Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                                 dev["status"] = "stable"
                                 Variables.push_event(f"Access point back online. {ssid_name}")
 
                         if time_missing > 40:
-                            console.print(f"[bold yellow][-] Removing stale AP:[/bold yellow] {bssid}")
+                            data = (f"[bold yellow][-] Removing stale AP:[/bold yellow] {bssid}")
+                            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                             del cls.live_map[bssid]
 
 
                     total = len(cls.live_map) or 1
 
-                    console.print(f"[bold yellow]Session APs:[/bold yellow] {total}")
 
                     Variables.wifi_current = total
 
                     if total > Variables.wifi_max:
                         Variables.wifi_max = total
-                        console.print(f"[bold green][!] New WiFi max:[/bold green] {total} APs")
+                        data = (f"[bold green][!] New WiFi max:[/bold green] {total} APs")
+                        Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)    
                         Variables.push_event(f"New maximum. {total} WiFi access points detected")
 
                     if total < Variables.wifi_min:
                         Variables.wifi_min = total
-                        console.print(f"[bold red][!] New WiFi min:[/bold red] {total} APs")
+                        data = (f"[bold red][!] New WiFi min:[/bold red] {total} APs")
+                        Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                         Variables.push_event(f"Alert. Access point count dropped to {total}")
 
                     last_check = now
 
-        except KeyboardInterrupt as e: console.print(f"[bold red][!] WiFi Keyboard Exception Error:[bold yellow] {e}")
-        except Exception as e: console.print(f"[bold red][!] WiFi Exception Error:[bold yellow] {e}")
+        except KeyboardInterrupt as e: 
+            data = (f"[bold red][!] WiFi Keyboard Exception Error:[bold yellow] {e}")
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
+
+        except Exception as e: 
+            data = (f"[bold red][!] WiFi Exception Error:[bold yellow] {e}")
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
 
 
 
@@ -498,12 +532,17 @@ class Monitor_WiFi():
         iface = Variables.iface
 
         try:
-            console.print("[yellow][+] WiFi AP & Client Monitoring Active")
+            data = ("[yellow][+] WiFi AP & Client Monitoring Active")
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#output", data)
             Background_Threads.channel_hopper()
             cls._pkt_handler(iface=iface)
 
-        except KeyboardInterrupt: console.print("\n[bold red]Stopping....")
-        except Exception as e: console.print(f"[bold red]WiFi Monitor Exception Error:[bold yellow] {e}")
+        except KeyboardInterrupt:
+            data = ("\n[bold red]Stopping....")
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)    
+        except Exception as e: 
+            data = (f"[bold red]WiFi Monitor Exception Error:[bold yellow] {e}")
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
 
 
 
@@ -523,8 +562,6 @@ class Monitor_Runner():
         threading.Thread(target=Monitor_WiFi.main,      args=(), daemon=True).start()
 
 
-
-        while True: time.sleep(1)
 
 
 
