@@ -10,7 +10,7 @@ from rich.panel import Panel
 
 # NETWORK IMPORTS
 from bleak import BleakClient, BleakScanner
-from scapy.all import sniff, RadioTap
+from scapy.all import sniff, RadioTap, Ether, ARP, srp
 from scapy.layers.dot11 import Dot11, Dot11Beacon, Dot11AssoReq, Dot11ProbeReq, Dot11Elt, Dot11Deauth
 
 
@@ -22,6 +22,7 @@ from datetime import datetime
 # NSM IMPORTS
 from nsm_vars import Variables
 from nsm_database import DataBase, Extensions, Background_Threads
+# from nsm_modules.nsm_utilities import Utilities, Connection_Handler
 
 
 # CONSTANTS
@@ -144,6 +145,7 @@ class Monitor_Bluetooth():
                             #console.print(f"{cls.devices}", rssi, mac, manuf, vendor, name, uuid)
                             data = (f"{cls.devices}", rssi, mac, manuf, vendor, name, uuid)
                             Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
+                            Variables.tui.call_from_thread(Variables.tui.upsert_ble, mac, vendor, manuf, name, rssi)
                     
                         
 
@@ -397,6 +399,8 @@ class Monitor_WiFi():
                         cls.aps += 1
                         data = (f"{cls.aps}", rssi, src, ssid, vendor)
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
+                        Variables.tui.call_from_thread(Variables.tui.upsert_ap, src, ssid, vendor, channel, rssi, 0)
+                        Variables.tui.call_from_thread(Variables.tui.add_ap_to_tree, src, ssid, rssi)
 
 
                     cls.live_map[src]["seen_cycles"] += 1
@@ -443,6 +447,7 @@ class Monitor_WiFi():
                             ap_name = cls.live_map[ap_mac]['data']['ssid']
                             data = (f"[{c3}][*] New Client:[/{c3}] {client_mac} -> AP: {ap_name} ({vendor})")
                             Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
+                            Variables.tui.call_from_thread(Variables.tui.add_client_to_tree, ap_mac, client_mac, vendor)
                             Variables.push_event(f"New client connected to {ap_name}")
 
 
@@ -480,12 +485,14 @@ class Monitor_WiFi():
                                 data = (f"[bold red][!] AP Offline:[yellow] {ssid_name} ({bssid})")
                                 Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                                 dev["status"] = "offline"
+                                Variables.tui.call_from_thread(Variables.tui.upsert_ap, bssid, ssid_name, dev["data"]["vendor"], dev["data"]["channel"], dev["data"]["rssi"], client_count, "offline")
                                 Variables.push_event(f"Alert. Access point offline. {ssid_name}")
                         else:
                             if dev["status"] == "offline":
                                 data = (f"[bold green][+] AP Back Online:[yellow] {ssid_name} ({bssid})")
                                 Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                                 dev["status"] = "stable"
+                                Variables.tui.call_from_thread(Variables.tui.upsert_ap, bssid, ssid_name, dev["data"]["vendor"], dev["data"]["channel"], dev["data"]["rssi"], client_count, "online")
                                 Variables.push_event(f"Access point back online. {ssid_name}")
 
                         if time_missing > 40:
@@ -511,6 +518,10 @@ class Monitor_WiFi():
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                         Variables.push_event(f"Alert. Access point count dropped to {total}")
 
+                    ble_count    = len(Variables.live_map_bt)
+                    all_clients  = sum(len(d["clients"]) for d in cls.live_map.values() if "clients" in d)
+                    Variables.tui.call_from_thread(Variables.tui.update_stats, ble_count, total, all_clients)
+
                     last_check = now
 
         except KeyboardInterrupt as e: 
@@ -529,7 +540,7 @@ class Monitor_WiFi():
 
         cls.aps = 0
         cls.live_map = Variables.live_map_wifi
-        iface = Variables.iface
+        iface = Variables.iface_monitor
 
         try:
             data = ("[yellow][+] WiFi AP & Client Monitoring Active")
@@ -547,6 +558,107 @@ class Monitor_WiFi():
 
 
 
+
+class Monitor_LAN():
+    """This class will be responsible for finding local devices and tracking their connection status"""
+    
+
+    DataBase = DataBase.WiFi
+
+
+
+    @classmethod
+    def subnet_scanner(cls, iface, target="192.168.1.0/24"):
+        """This will perform an ARP scan"""
+
+
+        c1 = "bold red"
+        c2 = "bold green"
+        c3 = "bold yellow"
+        num = 0
+
+
+        while True:
+
+            try:
+
+                arp      = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(target))
+                response = srp(arp, iface=iface, timeout=5, verbose=0)[0]
+                now      = time.time()
+
+
+                for sent, recv in response:
+
+                    target_ip  = recv.psrc
+                    target_mac = recv.hwsrc
+
+
+                    if target_ip not in cls.live_map:
+
+                        host   = cls.DataBase.get_host_name(target_ip=target_ip)
+                        vendor = cls.DataBase.get_vendor_main(mac=target_mac)
+
+                        cls.live_map[target_ip] = {
+                            "target_ip":   target_ip,
+                            "target_mac":  target_mac,
+                            "host":        host,
+                            "vendor":      vendor,
+                            "first_seen":  now,
+                            "last_seen":   now
+                        }
+
+                        cls.devices += 1
+                        data = (f"[{c2}][+][/{c2}] [{c3}]{target_ip}[/{c3}]  {host}  {vendor}")
+                        Variables.tui.call_from_thread(Variables.tui.push_data, "#lan", data)
+                        Variables.push_event(f"New LAN device. {host} {target_ip}")
+
+                        threading.Thread(target=Connection_Handler.status_checker, args=(target_ip, target_mac, host, vendor, iface), daemon=True).start()
+
+                    else:
+                        cls.live_map[target_ip]["last_seen"] = now
+
+
+                num += 1
+                time.sleep(cls.scan_delay)
+
+
+            except Exception as e:
+                data = (f"[{c1}][!] LAN Scanner Error:[bold yellow] {e}")
+                Variables.tui.call_from_thread(Variables.tui.push_data, "#lan", data)
+                Connection_Handler.establish_reconnection(verbose=False)
+                time.sleep(5)
+
+
+
+    @classmethod
+    def main(cls):
+        """This will be responsible for performing class wide logic"""
+
+
+        cls.devices    = 0
+        cls.scan_delay = 10
+        cls.live_map   = Variables.live_map_lan
+        iface          = Variables.iface_monitor
+        subnet         = Variables.subnet
+
+        try:
+            data = ("[yellow][+] LAN Monitoring Active")
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#lan", data)
+            cls.subnet_scanner(iface=iface, target=subnet)
+
+        except KeyboardInterrupt:
+            data = ("\n[bold red]Stopping....")
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#lan", data)
+        except Exception as e:
+            data = (f"[bold red]LAN Monitor Exception Error:[bold yellow] {e}")
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#lan", data)
+        
+
+
+
+
+
+
 class Monitor_Runner():
     """This class will run module classess"""
 
@@ -560,6 +672,10 @@ class Monitor_Runner():
         threading.Thread(target=Monitor_Bluetooth.main, args=(), daemon=True).start()
 
         threading.Thread(target=Monitor_WiFi.main,      args=(), daemon=True).start()
+
+        #threading.Thread(target=Monitor_LAN.main,       args=(), daemon=True).start()
+
+        Variables.tui.update_stats(4,7,10)
 
 
 

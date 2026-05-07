@@ -71,7 +71,8 @@ class Variables():
     refresh_per_second = 1
     
     
-    iface     = "wlan1"  # FOR MONITOR MODE
+    iface_monitor = "wlan1"  # FOR MONITOR MODE
+    iface_managed = False
     subnet    = "192.168.1.0/24"
     ip_router = "192.168.1.1"
     ip_local  = False

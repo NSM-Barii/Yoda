@@ -3,7 +3,7 @@
 
 
 # IMPORTS
-import json, socket, manuf, requests, subprocess, threading, time
+import json, socket, manuf, requests, subprocess, threading, time, random
 from pathlib import Path
 from scapy.all import RadioTap
 from scapy.layers.dot11 import Dot11Elt, Dot11Beacon
@@ -217,92 +217,346 @@ class DataBase():
         
             except Exception as e: console.print(f"[bold red][-] Database Exception Error:[bold yellow] {e}"); return False
         
-
         
-
-        # ===============
-        #  WiFi pkt Parsing
-        # ===============
+        # ============
+        # LAN PARSING
+        # ============
         @staticmethod
-        def get_frequency(freq):
-            """This will return frequency"""
-
-            if freq in range(2412, 2472): return "2.4 GHz"
-            elif freq in range(5180, 5825): return "5 GHz"
-            else: return "6 GHz"
+        def get_conn_status(verbose=True):
+            """This method will be a blocking method for if the user is online or not"""
 
 
-        @staticmethod
-        def get_encryption(pkt):
+            domains = ["google.com", "cloudflare.com", "github.com", "wikipedia.org", ]
 
-            if not pkt.haslayer(Dot11Beacon):return None
 
-            cap = pkt.sprintf("{Dot11Beacon:%Dot11Beacon.cap%}")
-            if "privacy" not in cap:return "OPEN"
+            try:
 
-            rsn = pkt.getlayer(Dot11Elt, ID=48)
-            wpa = pkt.getlayer(Dot11Elt, ID=221)
+                host = socket.gethostbyname(random.choice(domains))
 
-            if rsn:
-                rsn_info = rsn.info
-                if b"\x00\x0f\xac\x08" in rsn_info: return "WPA3"
-                return "WPA2"
+                if host:
+                    
+                    if verbose:
+                        console.print(f"[bold blue]Connection Status:[bold green] ONLINE")
+                    
+                    return True
+                
+                
+                console.print(f"[bold blue]Connection Status:[bold red] OFFLINE")
+                return False
+            
 
-            if wpa and b"WPA" in wpa.info: return "WPA"
-            return "WEP"
 
-        
-        @staticmethod
-        def get_rssi(pkt, format=False):
-            """This method will be responsible for pulling signal strength"""
+            except Exception as e:
 
-            signal = ""
-            signal = f"[bold red]Signal:[/bold red] {signal}"
+                if verbose:
+                    console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+                    console.print(f"[bold blue]Connection Status:[bold red] OFFLINE")
 
-            if pkt.haslayer(RadioTap):
-                rssi = getattr(pkt, "dBm_AntSignal", False)
 
-                if rssi:
-                    if format: return f"{rssi} dBm"
-                    return rssi
+                return False
 
 
         @staticmethod
-        def _frequency_to_channel(freq):
-
-            if 2412 <= freq <= 2484:  return (freq - 2407) // 5
-            elif 5180 <= freq <= 5825: return (freq - 5000) // 5
-            # 6 GHz and others can be added as needed
-            return None
+        def establish_reconnection(verbose=False):
+            """This method will be called upon if there is a connection interruption"""
 
 
-        @staticmethod
-        def get_channel(pkt):
-            """This will be used to get the ssid channel"""
-
-            elt = pkt[Dot11Elt]
-            channel = 0
-
-            while isinstance(elt, Dot11Elt):
-
-                if elt.ID == 3: channel = elt.info[0]; return channel
-
-                elt = elt.payload
+            # CHECK DELAY
+            delay = False
 
 
-            if pkt.haslayer(RadioTap):
+            while True:
+                
+                if delay:
+                    time.sleep(delay)
+
                 try:
-                    freq = pkt[RadioTap].ChannelFrequency
 
-                    if freq:
-                        if 2412 <= freq <= 2484:   return (freq - 2407) // 5
-                        elif 5180 <= freq <= 5825: return (freq - 5000) // 5
-                        return None
+                    status = Connection_Handler.get_conn_status(verbose=False)
+
+
+                    if status:
+
+                        console.print(f"Connection Status back online  -  Resuming program!", style="bold green")
+
+                        
+                        # RESUME PROGRAM
+                        return True
+                    
+
+                    else:
+                        
+                        if verbose:
+                            console.print(f"Connection status still offline", style="bold red")
+
+                        delay = 3
+                
+
+                except Exception as e:
+
+                    if verbose:
+                        console.print(f"Connection status still offline  -  {e}", style="bold red")
+
+                    delay = 3
+
+        
+        @classmethod
+        def status_checker(cls, target_ip, target_mac, host, vendor, iface):
+            """This method will be responsible for monitroing the connection status of the target_ip"""
+
+
             
-                except Exception: pass
+  
+            # LEGACY CONTROLLER
+            leg = False
+
+
+            # VARS
+            verbose = False
+            RESET = 0.5
+            delay = 0.5
+            timeout = 0.5
+            online = 0
+            count = 0
             
-            return None
-            
+            # COUNT THE AMOUNT OF SCANS PERFORMED
+            scans = 0
+
+
+            # COLORS
+            c1 = "bold red"
+            c2 = "bold blue"
+            c3 = "bold purple"
+            c4 = "bold yellow"
+
+
+            # GET LOCAL
+            local_ip = File_Handling.get_json(verbose=False)["local_ip"]
+
+
+            # PACKETS
+            arp = Ether(dst=target_mac) / ARP(pdst=target_ip)
+            ping = IP(dst=target_ip) / ICMP()
+
+
+            while True:
+
+                
+                try:
+
+                    # APPEND
+                    count += 1
+
+                    # GET
+                    with LOCK:
+                        response = srp(arp, iface=iface, timeout=timeout, verbose=0)[0]
+                        
+                        # DOUBLE CHECK
+                        if not response:
+                            pass
+                        # console.print("2")
+                            #response = sr1(ping, iface=iface, timeout=timeout, verbose=0)
+
+
+                    # IF NOW ONLINE
+                    if response and not online:
+                        
+                        # UPDATE
+                        online = True
+                        delay = RESET
+                        timeout = RESET
+                        count = 0
+
+
+                        if verbose:
+                            console.print(f"[{c1}][+][/{c1}] Node Online: [{c4}]{target_ip} ")
+
+
+                        
+                        # NEW WAY
+                        cls.nodes[target_ip] = {
+                            "target_ip": target_ip,
+                            "target_mac": target_mac,
+                            "host": host,
+                            "vendor": vendor,
+                            "status": "online"
+                        }
+
+                        # UPDATE STATUS
+                        status = "online"
+
+                        # ANNOUNCE
+                        if scans > 3:
+                            Utilities.announce_device(ip=target_ip, host=host, vendor=vendor, type=2, status=status)
+
+
+                        # PUSH STATUS
+                        if leg:
+                            with LOCK:
+                                Push_Network_Status.push_device_info(
+                                    
+                                    target_ip=target_ip,
+                                    target_mac=target_mac,
+                                    host=host,
+                                    vendor=vendor,
+                                    status="online"
+                                    
+                                    )
+                        
+                        
+                        # DELAY
+                        delay = RESET   
+                        timeout = RESET
+                        time.sleep(delay)
+                    
+
+                    # STILL ONLINE
+                    elif response:
+
+                        if verbose:
+                            console.print(f"[{c1}][+][/{c1}] Node Online still: [{c4}]{target_ip} ")
+
+
+                        # DELAY
+                        time.sleep(delay)
+
+
+                        # TRY AND RE QUERY VENDOR IF NONE
+                        if not vendor:
+                            vendor = Utilities.get_vendor(mac=target_mac)
+                            cls.nodes[target_ip] = {
+                                "target_ip": target_ip,
+                                "target_mac": target_mac,
+                                "host": host,
+                                "vendor": vendor,
+                                "status": "online"
+                            }
+
+
+                            #console.print("got --> ", vendor)
+                        
+
+                    
+
+                    # NOW OFFLINE
+                    elif count > 6:
+
+
+                        # NEW WAY
+                        cls.nodes[target_ip] = {
+                            "target_ip": target_ip,
+                            "target_mac": target_mac,
+                            "host": host,
+                            "vendor": vendor,
+                            "status": "offline"
+                        }
+                        
+
+                        # UPDATE STATUS
+                        status = "offline"
+
+
+                        #console.print(response)
+                        
+
+
+                        # ANNOUNCE
+                        if online:
+                            Utilities.announce_device(ip=target_ip, host=host, vendor=vendor, type=2, status=status)
+
+                        # PUSH STATUS
+                        if leg:
+                            with LOCK:
+                                Push_Network_Status.push_device_info(
+                                    
+                                    target_ip=target_ip,
+                                    target_mac=target_mac,
+                                    host=host,
+                                    vendor=vendor,
+                                    status="offline"
+                                    
+                                    )
+                        
+
+                        # OFFLINE
+                        online = False
+                        
+
+                        # DELAY
+                        delay = RESET   
+                        timeout = RESET
+                        time.sleep(delay)
+                    
+
+                    
+                    # RE-TRY ARP
+                    else:
+
+                        count += 1
+                        delay += 0.5
+                        timeout += 0.5 if timeout < 2.5 else 2.5
+                        delay += 0.5 if delay < 2.5 else 2.5
+                    
+
+                        time.sleep(delay)
+
+
+                        if verbose:
+                            console.print("arping -- ", target_ip)
+                    
+
+                    # FOR TESTING
+                    if verbose:
+                        console.print("here -- ", target_ip)
+                    scans += 1
+                
+
+                except Exception as e:
+                        console.print(e)
+
+
+                        # REMOVE FROM LIST
+                        from nsm_network_scanner import Network_Scanner
+                        Network_Scanner.subnet_devices.remove(target_ip)
+
+
+                        # NEW WAY
+                        cls.nodes[target_ip] = {
+                            "target_ip": target_ip,
+                            "target_mac": target_mac,
+                            "host": host,
+                            "vendor": vendor,
+                            "status": "offline"
+                        }
+
+
+                        # UPDATE STATUS
+                        status = "offline"
+
+
+                        # ANNOUNCE
+                        Utilities.announce_device(ip=target_ip, host=host, vendor=vendor, type=2, status=status)
+
+
+                        # SET OFFLINE (FOR NOW)
+                        if leg:
+                            with LOCK:
+                                Push_Network_Status.push_device_info(
+                                    
+                                    target_ip=target_ip,
+                                    target_mac=target_mac,
+                                    host=host,
+                                    vendor=vendor,
+                                    status="offline"
+                                    
+                                    )
+
+
+                        # KILL THREAD
+                        console.print(f"[bold red][-] Thread Killed:[bold yellow] {target_ip}")
+
+                        break
+
 
 
 
