@@ -383,10 +383,7 @@ class Monitor_WiFi():
 
                 if frame_type in ("0x0008", "0x0004"):
 
-                    try:
-                        ssid = bytes.fromhex(raw_ssid).decode("utf-8", errors="replace") if raw_ssid else "Hidden"
-                    except ValueError:
-                        ssid = raw_ssid or "Hidden"
+                    ssid = raw_ssid or "Hidden"
 
                     if src not in cls.live_map:
 
