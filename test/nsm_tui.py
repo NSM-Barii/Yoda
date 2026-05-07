@@ -33,12 +33,18 @@ class TUI(App):
         border: round yellow;
         content-align: center middle;
     }
+    TabbedContent {
+        height: 1fr;
+    }
+    TabPane {
+        height: 1fr;
+    }
     #up {
-        height: 50%;
+        height: 1fr;
     }
 
     #bottom {
-        height: 50%;
+        height: 1fr;
     }
 
     #ble {
@@ -82,9 +88,6 @@ class TUI(App):
                 with Horizontal(id='up'):
                     yield RichLog(id='ble',  markup=True)
                     yield RichLog(id='wifi', markup=True)
-                with Horizontal(id="bottom"):
-                    yield RichLog(id="lan",    markup=True)
-                    yield RichLog(id="output", markup=True)
 
             with TabPane("BLE Devices"):
                 yield Select([("All", "all"), ("Online", "online"), ("Offline", "offline")], id="ble_filter", value="all")
