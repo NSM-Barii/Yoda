@@ -373,15 +373,17 @@ class Monitor_WiFi():
                 rssi       = max((int(x) for x in parts[4].split(",") if x), default=-100)
                 channel    = parts[5]
                 freq       = parts[6]
-                frame_type = parts[7]
                 seq        = parts[8]
+
+                try:    ft = int(parts[7].strip(), 0)
+                except: ft = -1
 
                 if not src or src == "ff:ff:ff:ff:ff:ff": continue
 
                 now = time.time()
 
 
-                if frame_type in ("0x0008", "0x0004"):
+                if ft in (0x08, 0x04):
 
                     if raw_ssid:
                         try:
@@ -417,7 +419,7 @@ class Monitor_WiFi():
                     cls.live_map[src]["last_seen"] = now
 
 
-                elif frame_type == "0x000c":
+                elif ft == 0x0c:
 
                     if src not in deauth_tracker:
                         deauth_tracker[src] = {"count": 0, "start_time": now, "dst": set()}
