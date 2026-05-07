@@ -373,25 +373,23 @@ class Monitor_WiFi():
                 rssi       = max((int(x) for x in parts[4].split(",") if x), default=-100)
                 channel    = parts[5]
                 freq       = parts[6]
+                frame_type = parts[7]
                 seq        = parts[8]
-
-                try:
-                    ft = parts[7].strip()
-                    frame_type = int(ft, 16) if ft.startswith("0x") else int(ft)
-                except (ValueError, IndexError):
-                    continue
 
                 if not src or src == "ff:ff:ff:ff:ff:ff": continue
 
                 now = time.time()
 
 
-                if frame_type in (0x08, 0x04):
+                if frame_type in ("0x0008", "0x0004"):
 
-                    try:
-                        ssid = bytes.fromhex(raw_ssid).decode("utf-8", errors="replace") if raw_ssid else "Hidden"
-                    except ValueError:
-                        ssid = raw_ssid or "Hidden"
+                    if raw_ssid:
+                        try:
+                            ssid = bytes.fromhex(raw_ssid).decode("utf-8", errors="ignore")
+                        except:
+                            ssid = raw_ssid
+                    else:
+                        ssid = "Hidden"
 
                     if src not in cls.live_map:
 
@@ -419,7 +417,7 @@ class Monitor_WiFi():
                     cls.live_map[src]["last_seen"] = now
 
 
-                elif frame_type == 0x0c:
+                elif frame_type == "0x000c":
 
                     if src not in deauth_tracker:
                         deauth_tracker[src] = {"count": 0, "start_time": now, "dst": set()}
@@ -490,13 +488,13 @@ class Monitor_WiFi():
                             Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                             Variables.push_event(f"New maximum. {ssid_name} has {client_count} clients")
 
-                        if client_count < dev["client_min"]:
+                        if dev["client_max"] > 0 and client_count < dev["client_min"]:
                             dev["client_min"] = client_count
                             data = (f"[bold red][!] {ssid_name} new client min:[/bold red] {client_count}")
                             Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                             Variables.push_event(f"Alert. {ssid_name} client count dropped to {client_count}")
 
-                        if time_missing > 20:
+                        if time_missing > 60:
                             if dev["status"] != "offline":
                                 data = (f"[bold red][!] AP Offline:[yellow] {ssid_name} ({bssid})")
                                 Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
@@ -511,7 +509,7 @@ class Monitor_WiFi():
                                 Variables.tui.call_from_thread(Variables.tui.upsert_ap, bssid, ssid_name, dev["data"]["vendor"], dev["data"]["channel"], dev["data"]["rssi"], client_count, "online")
                                 Variables.push_event(f"Access point back online. {ssid_name}")
 
-                        if time_missing > 40:
+                        if time_missing > 180:
                             data = (f"[bold yellow][-] Removing stale AP:[/bold yellow] {bssid}")
                             Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                             del cls.live_map[bssid]
