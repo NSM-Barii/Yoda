@@ -116,7 +116,7 @@ class TUI(App):
         ble_table.add_columns("#", "RSSI", "MAC", "Name", "Vendor", "Manufacturer", "UUIDs", "Status")
 
         ap_table  = self.query_one("#ap_table",  DataTable)
-        ap_table.add_columns("#", "RSSI", "SSID", "BSSID", "Vendor", "Channel", "Status")
+        ap_table.add_columns("#", "RSSI", "SSID", "BSSID", "Vendor", "Channel", "Clients", "Status")
 
         self.query_one("#wifi_tree", Tree).root.expand()
         
@@ -169,10 +169,11 @@ class TUI(App):
         table = self.query_one("#ap_table", DataTable)
         color = "green" if status == "online" else "dim"
         num   = len(self._ap_rows) + 1
-        row   = (str(num), str(rssi), f"[{color}]{ssid}", bssid, vendor or "-", str(channel), status)
+        row   = (str(num), str(rssi), f"[{color}]{ssid}", bssid, vendor or "-", str(channel), str(clients), status)
 
         if bssid in self._ap_rows:
             table.update_cell(self._ap_rows[bssid], "RSSI",    str(rssi))
+            table.update_cell(self._ap_rows[bssid], "Clients", str(clients))
             table.update_cell(self._ap_rows[bssid], "Status",  status)
         else:
             key = table.add_row(*row)

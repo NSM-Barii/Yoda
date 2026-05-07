@@ -379,7 +379,10 @@ class Monitor_WiFi():
 
                 if frame_type in ("0x0008", "0x0004"):
 
-                    ssid = raw_ssid if raw_ssid else "Hidden"
+                    try:
+                        ssid = bytes.fromhex(raw_ssid).decode("utf-8", errors="replace") if raw_ssid else "Hidden"
+                    except ValueError:
+                        ssid = raw_ssid or "Hidden"
 
                     if src not in cls.live_map:
 
@@ -444,10 +447,14 @@ class Monitor_WiFi():
                             cls.live_map[ap_mac]["clients"].add(client_mac)
                             vendor = cls.DataBase.get_vendor_main(mac=client_mac, verbose=False)
 
-                            ap_name = cls.live_map[ap_mac]['data']['ssid']
+                            ap_data       = cls.live_map[ap_mac]["data"]
+                            ap_name       = ap_data["ssid"]
+                            client_count  = len(cls.live_map[ap_mac]["clients"])
+
                             data = (f"[{c3}][*] New Client:[/{c3}] {client_mac} -> AP: {ap_name} ({vendor})")
                             Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                             Variables.tui.call_from_thread(Variables.tui.add_client_to_tree, ap_mac, client_mac, vendor)
+                            Variables.tui.call_from_thread(Variables.tui.upsert_ap, ap_mac, ap_name, ap_data["vendor"], ap_data["channel"], ap_data["rssi"], client_count)
                             Variables.push_event(f"New client connected to {ap_name}")
 
 
