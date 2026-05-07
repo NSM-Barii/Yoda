@@ -151,11 +151,16 @@ class TUI(App):
         table = self.query_one("#ble_table", DataTable)
         color = "green" if status == "online" else "dim"
         num   = len(self._ble_rows) + 1
-        row   = (str(num), str(rssi), f"[{color}]{mac}", name or "-", vendor or "-", manuf or "-", status)
+        row   = (str(num), str(rssi), f"[{color}]{mac}", name or "-", vendor or "-", manuf or "-", "-", status)
 
         if mac in self._ble_rows:
-            table.update_cell(self._ble_rows[mac], "RSSI",   str(rssi))
-            table.update_cell(self._ble_rows[mac], "Status", status)
+            try:
+                table.update_cell(self._ble_rows[mac], "RSSI",   str(rssi))
+                table.update_cell(self._ble_rows[mac], "Status", status)
+            except Exception:
+                del self._ble_rows[mac]
+                key = table.add_row(*row)
+                self._ble_rows[mac] = key
         else:
             key = table.add_row(*row)
             self._ble_rows[mac] = key
@@ -171,9 +176,14 @@ class TUI(App):
         row   = (str(num), str(rssi), f"[{color}]{ssid}", bssid, vendor or "-", str(channel), str(clients), status)
 
         if bssid in self._ap_rows:
-            table.update_cell(self._ap_rows[bssid], "RSSI",    str(rssi))
-            table.update_cell(self._ap_rows[bssid], "Clients", str(clients))
-            table.update_cell(self._ap_rows[bssid], "Status",  status)
+            try:
+                table.update_cell(self._ap_rows[bssid], "RSSI",    str(rssi))
+                table.update_cell(self._ap_rows[bssid], "Clients", str(clients))
+                table.update_cell(self._ap_rows[bssid], "Status",  status)
+            except Exception:
+                del self._ap_rows[bssid]
+                key = table.add_row(*row)
+                self._ap_rows[bssid] = key
         else:
             key = table.add_row(*row)
             self._ap_rows[bssid] = key
