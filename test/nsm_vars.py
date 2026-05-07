@@ -85,11 +85,11 @@ class Variables():
 
     ble_current  = 0
     ble_max      = 0
-    ble_min      = 0
+    ble_min      = float("inf")
 
     wifi_current = 0
     wifi_max     = 0
-    wifi_min     = 0
+    wifi_min     = float("inf")
 
     
     live_map_lan  = {}

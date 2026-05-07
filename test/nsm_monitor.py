@@ -142,8 +142,7 @@ class Monitor_Bluetooth():
                             }
 
                             cls.devices += 1
-                            #console.print(f"{cls.devices}", rssi, mac, manuf, vendor, name, uuid)
-                            data = (f"{cls.devices}", rssi, mac, manuf, vendor, name, uuid)
+                            data = f"[bold green][+][/bold green] [cyan]{mac}[/cyan]  [yellow]{name or '?'}[/yellow]  [dim]{vendor or manuf or ''}[/dim]  rssi:[bold]{rssi}[/bold]"
                             Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                             Variables.tui.call_from_thread(Variables.tui.upsert_ble, mac, vendor, manuf, name, rssi)
                     
@@ -329,7 +328,7 @@ class Monitor_WiFi():
             "tshark",
             "-i", iface,
             "-l",
-            "-Y", "wlan.fc.type_subtype == 0x04 || wlan.fc.type_subtype == 0x08 || wlan.fc.type == 2 || wlan.fc.type_subtype == 0x0c",
+            "-Y", "wlan.fc.type_subtype == 0x05 || wlan.fc.type_subtype == 0x08 || wlan.fc.type == 2 || wlan.fc.type_subtype == 0x0c",
             "-T", "fields",
             "-e", "frame.time_epoch",
             "-e", "wlan.ta",
@@ -383,7 +382,7 @@ class Monitor_WiFi():
                 now = time.time()
 
 
-                if ft in (0x08, 0x04):
+                if ft in (0x08, 0x05):
 
                     if raw_ssid:
                         try:
@@ -409,7 +408,7 @@ class Monitor_WiFi():
                         }
 
                         cls.aps += 1
-                        data = (f"{cls.aps}", rssi, src, ssid, vendor)
+                        data = f"[bold green][+][/bold green] [cyan]{ssid}[/cyan]  [dim]{src}[/dim]  ch:[bold]{channel}[/bold]  rssi:[bold]{rssi}[/bold]  [dim]{vendor or ''}[/dim]"
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                         Variables.tui.call_from_thread(Variables.tui.upsert_ap, src, ssid, vendor, channel, rssi, 0)
                         Variables.tui.call_from_thread(Variables.tui.add_ap_to_tree, src, ssid, rssi)
@@ -690,8 +689,6 @@ class Monitor_Runner():
         threading.Thread(target=Monitor_WiFi.main,      args=(), daemon=True).start()
 
         #threading.Thread(target=Monitor_LAN.main,       args=(), daemon=True).start()
-
-        Variables.tui.update_stats(4,7,10)
 
 
 
