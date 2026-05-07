@@ -139,10 +139,9 @@ class TUI(App):
     def update_stats(self, ble:int, wifi_aps:int, wifi_clients:int):
         """This will be used to update the status bar"""
 
-
-        if ble:          self.query_one("#stats_ble",     Label).update(f"[bold red]BLE: {ble}")
-        if wifi_aps:     self.query_one("#stats_aps",     Label).update(f"[bold green]APs: {wifi_aps}")
-        if wifi_clients: self.query_one("#stats_clients", Label).update(f"[bold blue]Clients: {wifi_clients}")
+        self.query_one("#stats_ble",     Label).update(f"[bold red]BLE: {ble}")
+        self.query_one("#stats_aps",     Label).update(f"[bold green]APs: {wifi_aps}")
+        self.query_one("#stats_clients", Label).update(f"[bold blue]Clients: {wifi_clients}")
 
 
     def upsert_ble(self, mac, vendor, manuf, name, rssi, status="online"):

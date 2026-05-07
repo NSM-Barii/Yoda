@@ -270,6 +270,10 @@ class Monitor_Bluetooth():
                     Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                     Variables.push_event(f"Alert. Device count dropped to {total} Bluetooth devices")
 
+                wifi_aps    = len(Variables.live_map_wifi)
+                wifi_clients = sum(len(d["clients"]) for d in Variables.live_map_wifi.values() if "clients" in d)
+                Variables.tui.call_from_thread(Variables.tui.update_stats, total, wifi_aps, wifi_clients)
+
 
 
         except KeyboardInterrupt as e:  
