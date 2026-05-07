@@ -109,8 +109,8 @@ class TUI(App):
 
         self.query_one('#ble', RichLog).border_title    = "Bluetooth/BLE"
         self.query_one('#wifi', RichLog).border_title   = "WiFi"
-        self.query_one('#lan', RichLog).border_title    = "LAN"
-        self.query_one('#output', RichLog).border_title = "Output"
+        #self.query_one('#lan', RichLog).border_title    = "LAN"
+        #self.query_one('#output', RichLog).border_title = "Output"
 
         ble_table = self.query_one("#ble_table", DataTable)
         ble_table.add_columns("#", "RSSI", "MAC", "Name", "Vendor", "Manufacturer", "UUIDs", "Status")
