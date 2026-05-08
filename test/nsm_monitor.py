@@ -142,7 +142,7 @@ class Monitor_Bluetooth():
                             }
 
                             cls.devices += 1
-                            data = f"[bold blue][BLE][/bold blue]  [cyan]{mac}[/cyan]  [bold white]{name or '?'}[/bold white]  [dim]{vendor or manuf or ''}[/dim]  [dim]rssi:[/dim][bold magenta]{rssi}[/bold magenta]"
+                            data = f"[bold blue]{cls.devices}[/bold blue]  [cyan]{mac}[/cyan]  [bold white]{name or '?'}[/bold white]  [dim]{vendor or manuf or ''}[/dim]  [dim]rssi:[/dim][bold magenta]{rssi}[/bold magenta]"
                             Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                             Variables.tui.call_from_thread(Variables.tui.upsert_ble, mac, vendor, manuf, name, rssi)
                     
@@ -192,7 +192,6 @@ class Monitor_Bluetooth():
                             dev["status"] = "unstable"
                             dev["stable_count"] = 0
 
-                            # Voice notification
                             vendor = dev["data"].get("vendor") or "Unknown"
                             Variables.push_event(f"Alert. Unstable BLE device detected. {vendor}")
 
@@ -207,7 +206,6 @@ class Monitor_Bluetooth():
                                 data = (f"[bold green][+] Device now stable:[yellow] {mac}")
                                 Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
 
-                                # Voice notification
                                 Variables.push_event(f"Device stabilized")
 
 
