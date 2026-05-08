@@ -145,11 +145,10 @@ class TUI(App):
         color = "green" if status == "online" else "dim"
 
         if mac in self._ble_rows:
-            try:
-                table.update_cell(mac, "RSSI",   str(rssi))
-                table.update_cell(mac, "Status", status)
-            except Exception:
-                pass
+            try: table.update_cell(mac, "RSSI",   str(rssi))
+            except: pass
+            try: table.update_cell(mac, "Status", status)
+            except: pass
         else:
             num = len(self._ble_rows) + 1
             row = (str(num), str(rssi), f"[{color}]{mac}", name or "-", vendor or "-", manuf or "-", "-", status)
@@ -164,12 +163,12 @@ class TUI(App):
         color = "green" if status == "online" else "dim"
 
         if bssid in self._ap_rows:
-            try:
-                table.update_cell(bssid, "RSSI",    str(rssi))
-                table.update_cell(bssid, "Clients", str(clients))
-                table.update_cell(bssid, "Status",  status)
-            except Exception:
-                pass
+            try: table.update_cell(bssid, "RSSI",    str(rssi))
+            except: pass
+            try: table.update_cell(bssid, "Clients", str(clients))
+            except: pass
+            try: table.update_cell(bssid, "Status",  status)
+            except: pass
         else:
             num = len(self._ap_rows) + 1
             row = (str(num), str(rssi), f"[{color}]{ssid}", bssid, vendor or "-", str(channel), str(clients), status)

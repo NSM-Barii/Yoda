@@ -142,7 +142,7 @@ class Monitor_Bluetooth():
                             }
 
                             cls.devices += 1
-                            data = f"[bold green][+][/bold green] [cyan]{mac}[/cyan]  [yellow]{name or '?'}[/yellow]  [dim]{vendor or manuf or ''}[/dim]  rssi:[bold]{rssi}[/bold]"
+                            data = f"[bold green][{cls.devices}][/bold green] [cyan]{mac}[/cyan]  [yellow]{name or '?'}[/yellow]  [dim]{vendor or manuf or ''}[/dim]  rssi:[bold]{rssi}[/bold]"
                             Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                             Variables.tui.call_from_thread(Variables.tui.upsert_ble, mac, vendor, manuf, name, rssi)
                     
@@ -336,7 +336,12 @@ class Monitor_WiFi():
             "-e", "wlan.fc.type_subtype",
         ]
 
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        process = subprocess.Popen(
+            cmd, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.DEVNULL, 
+            text=True
+            )
 
         try:
 
@@ -362,8 +367,7 @@ class Monitor_WiFi():
                     if raw:
                         try:    ssid = bytes.fromhex(raw).decode("utf-8", errors="ignore")
                         except: ssid = raw
-                    else:
-                        ssid = "Hidden"
+                    else: ssid = "Hidden"
 
                     if src not in cls.live_map:
 
@@ -371,7 +375,7 @@ class Monitor_WiFi():
                         cls.live_map[src] = {"ssid": ssid, "channel": channel, "rssi": rssi, "vendor": vendor, "clients": set()}
 
                         cls.aps += 1
-                        data = f"[bold green][+][/bold green] [cyan]{ssid}[/cyan]  [dim]{src}[/dim]  ch:[bold]{channel}[/bold]  rssi:[bold]{rssi}[/bold]  [dim]{vendor or ''}[/dim]"
+                        data = f"[bold green][SSID][/bold green] [cyan]{ssid}[/cyan]  [dim]{src}[/dim]  ch:[bold]{channel}[/bold]  rssi:[bold]{rssi}[/bold]  [dim]{vendor or ''}[/dim]"
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                         Variables.tui.call_from_thread(Variables.tui.upsert_ap, src, ssid, vendor, channel, rssi, 0)
                         Variables.tui.call_from_thread(Variables.tui.add_ap_to_tree, src, ssid, rssi)
@@ -395,7 +399,7 @@ class Monitor_WiFi():
                         ap           = cls.live_map[ap_mac]
                         client_count = len(ap["clients"])
 
-                        data = f"[bold yellow][*][/bold yellow] [yellow]{client_mac}[/yellow]  ->  [cyan]{ap['ssid']}[/cyan]  [dim]{vendor or ''}[/dim]"
+                        data = f"[bold yellow][CLIENT][/bold yellow] [yellow]{client_mac}[/yellow]  ->  [cyan]{ap['ssid']}[/cyan]  [dim]{vendor or ''}[/dim]"
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                         Variables.tui.call_from_thread(Variables.tui.add_client_to_tree, ap_mac, client_mac, vendor)
                         Variables.tui.call_from_thread(Variables.tui.upsert_ap, ap_mac, ap["ssid"], ap["vendor"], ap["channel"], ap["rssi"], client_count)
@@ -404,10 +408,8 @@ class Monitor_WiFi():
                         Variables.tui.call_from_thread(Variables.tui.update_stats, len(Variables.live_map_bt), len(cls.live_map), total_clients)
 
 
-        except Exception as e:
-            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", f"[bold red][!] WiFi Error:[/bold red] {e}")
-        finally:
-            process.kill()
+        except Exception as e: Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", f"[bold red][!] WiFi Error:[/bold red] {e}")
+        finally: process.kill()
 
 
     @classmethod
