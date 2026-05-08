@@ -581,7 +581,7 @@ class Background_Threads:
             delay = 0.25
             all_hops = [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161]
 
-            iface = Variables.iface
+            iface = Variables.iface_monitor
 
 
             # TUNE HOP
@@ -641,8 +641,8 @@ class Background_Threads:
                     except Exception as e:
                         console.print(f"[bold red]Exception Error:[bold yellow] {e}")
 
-        threading.Thread(target=hopper, args=(), daemon=True).start()
         cls.hop = True
+        threading.Thread(target=hopper, args=(), daemon=True).start()
 
     @staticmethod
     def change_iface_mode(iface, mode=["managed", "monitor"], verbose=True):
