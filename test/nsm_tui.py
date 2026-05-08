@@ -52,10 +52,14 @@ class TUI(App):
         self.query_one("#wifi", RichLog).border_title = "WiFi"
 
         ble_table = self.query_one("#ble_table", DataTable)
-        ble_table.add_columns("#", "RSSI", "MAC", "Name", "Vendor", "Manufacturer", "Status")
+        _, self._ck_ble_rssi, _, _, _, _, self._ck_ble_status = ble_table.add_columns(
+            "#", "RSSI", "MAC", "Name", "Vendor", "Manufacturer", "Status"
+        )
 
         ap_table = self.query_one("#ap_table", DataTable)
-        ap_table.add_columns("#", "RSSI", "SSID", "BSSID", "Vendor", "Channel", "Clients", "Status")
+        _, self._ck_ap_rssi, _, _, _, _, self._ck_ap_clients, self._ck_ap_status = ap_table.add_columns(
+            "#", "RSSI", "SSID", "BSSID", "Vendor", "Channel", "Clients", "Status"
+        )
 
         self.query_one("#wifi_tree", Tree).root.expand()
 
@@ -83,9 +87,9 @@ class TUI(App):
 
         if mac in self._ble_rows:
             key = self._ble_rows[mac]
-            try: table.update_cell(key, "RSSI",   str(rssi))
+            try: table.update_cell(key, self._ck_ble_rssi,   str(rssi))
             except: pass
-            try: table.update_cell(key, "Status", status)
+            try: table.update_cell(key, self._ck_ble_status, status)
             except: pass
         else:
             num = len(self._ble_rows) + 1
@@ -99,11 +103,11 @@ class TUI(App):
 
         if bssid in self._ap_rows:
             key = self._ap_rows[bssid]
-            try: table.update_cell(key, "RSSI",    str(rssi))
+            try: table.update_cell(key, self._ck_ap_rssi,    str(rssi))
             except: pass
-            try: table.update_cell(key, "Clients", str(clients))
-            except Exception as e: self.push_data("#wifi", f"[red]clients err: {e}")
-            try: table.update_cell(key, "Status",  status)
+            try: table.update_cell(key, self._ck_ap_clients, str(clients))
+            except: pass
+            try: table.update_cell(key, self._ck_ap_status,  status)
             except: pass
         else:
             num = len(self._ap_rows) + 1
