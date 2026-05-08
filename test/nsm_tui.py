@@ -25,13 +25,11 @@ class TUI(App):
 
     CSS = """
     #stats {
-        dock: top;
-        height: 1;
+        height: 3;
         width: auto;
-        offset-x: -2;
-        layer: above;
-        content-align: right middle;
-        padding: 0 1;
+        content-align: left middle;
+        padding: 0 2;
+        border: round grey;
     }
     TabbedContent {
         height: 1fr;
