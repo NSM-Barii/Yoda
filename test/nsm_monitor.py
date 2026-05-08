@@ -313,99 +313,60 @@ class Monitor_Bluetooth():
 
 # Tshark WRAPPER 
 class Monitor_WiFi():
-    """This will track WiFi APs and their clients"""
+    """This will track WiFi APs and clients"""
 
 
     DataBase = DataBase.WiFi
 
 
     @classmethod
-    def _pkt_handler(cls, iface):
-        """This will sniff for beacons and data frames to track APs and clients"""
-
+    def _scanner(cls, iface):
 
         cmd = [
-            "tshark",
-            "-i", iface,
-            "-l",
-            "-Y", "wlan.fc.type_subtype == 0x05 || wlan.fc.type_subtype == 0x08 || wlan.fc.type == 2 || wlan.fc.type_subtype == 0x0c",
+            "tshark", "-i", iface, "-l",
+            "-Y", "wlan.fc.type_subtype == 0x08 || wlan.fc.type == 2",
             "-T", "fields",
-            "-e", "frame.time_epoch",
             "-e", "wlan.ta",
             "-e", "wlan.ra",
             "-e", "wlan.ssid",
             "-e", "radiotap.dbm_antsignal",
             "-e", "wlan_radio.channel",
-            "-e", "wlan_radio.frequency",
             "-e", "wlan.fc.type_subtype",
-            "-e", "wlan.seq"
         ]
 
-
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-            text=True
-        )
-
-
-        c1 = "bold red"
-        c2 = "bold green"
-        c3 = "bold yellow"
-        cycle = 0
-        last_check = time.time()
-        deauth_tracker = {}
-        last_deauth_check = time.time()
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
 
         try:
 
             for line in process.stdout:
 
                 parts = line.strip().split("\t")
-                if len(parts) < 9: continue
+                if len(parts) < 6: continue
 
-                time_epoch = parts[0]
-                src        = parts[1]
-                dst        = parts[2]
-                raw_ssid   = parts[3].strip() or False
-                rssi       = max((int(x) for x in parts[4].split(",") if x), default=-100)
-                channel    = parts[5]
-                freq       = parts[6]
-                seq        = parts[8]
+                src     = parts[0]
+                dst     = parts[1]
+                raw     = parts[2].strip()
+                rssi    = max((int(x) for x in parts[3].split(",") if x), default=-100)
+                channel = parts[4]
 
-                try:    ft = int(parts[7].strip(), 0)
+                try:    ft = int(parts[5].strip(), 0)
                 except: ft = -1
 
                 if not src or src == "ff:ff:ff:ff:ff:ff": continue
 
-                now = time.time()
 
+                if ft == 0x08:  # beacon — AP discovery
 
-                if ft in (0x08, 0x05):
-
-                    if raw_ssid:
-                        try:
-                            ssid = bytes.fromhex(raw_ssid).decode("utf-8", errors="ignore")
-                        except:
-                            ssid = raw_ssid
+                    if raw:
+                        try:    ssid = bytes.fromhex(raw).decode("utf-8", errors="ignore")
+                        except: ssid = raw
                     else:
                         ssid = "Hidden"
 
                     if src not in cls.live_map:
 
                         vendor = cls.DataBase.get_vendor_main(mac=src, verbose=False)
-
-                        cls.live_map[src] = {
-                            "status": "stable",
-                            "data": {"ssid": ssid, "rssi": rssi, "vendor": vendor, "channel": channel, "freq": freq},
-                            "seen_cycles": 1,
-                            "first_seen": now,
-                            "last_seen": now,
-                            "clients": set(),
-                            "client_max": 0,
-                            "client_min": float("inf")
-                        }
+                        cls.live_map[src] = {"ssid": ssid, "channel": channel, "rssi": rssi, "vendor": vendor, "clients": set()}
 
                         cls.aps += 1
                         data = f"[bold green][+][/bold green] [cyan]{ssid}[/cyan]  [dim]{src}[/dim]  ch:[bold]{channel}[/bold]  rssi:[bold]{rssi}[/bold]  [dim]{vendor or ''}[/dim]"
@@ -413,162 +374,50 @@ class Monitor_WiFi():
                         Variables.tui.call_from_thread(Variables.tui.upsert_ap, src, ssid, vendor, channel, rssi, 0)
                         Variables.tui.call_from_thread(Variables.tui.add_ap_to_tree, src, ssid, rssi)
 
-
-                    cls.live_map[src]["seen_cycles"] += 1
-                    cls.live_map[src]["last_seen"] = now
-
-
-                elif ft == 0x0c:
-
-                    if src not in deauth_tracker:
-                        deauth_tracker[src] = {"count": 0, "start_time": now, "dst": set()}
-
-                    deauth_tracker[src]["count"] += 1
-                    deauth_tracker[src]["dst"].add(dst)
-
-                    time_elapsed = now - deauth_tracker[src]["start_time"]
-
-                    if time_elapsed >= 1 and deauth_tracker[src]["count"] >= 5:
-                        rate = deauth_tracker[src]["count"] / time_elapsed
-                        targets = len(deauth_tracker[src]["dst"])
-
-                        data = (f"[{c1}][!] Deauth Attack Detected![/{c1}]"
-                                    f"\n     [{c3}]Attacker:[/{c3}] {src}"
-                                    f"\n     [{c3}]Rate:[/{c3}] {int(rate)} pkts/sec"
-                                    f"\n     [{c3}]Targets:[/{c3}] {targets}\n")
-                        
-                        Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
-
-                        Variables.push_event(f"Warning. Deauth attack detected. {int(rate)} packets per second from {src}")
-
-                        deauth_tracker[src]["count"] = 0
-                        deauth_tracker[src]["start_time"] = now
+                        total = len(cls.live_map)
+                        Variables.tui.call_from_thread(Variables.tui.update_stats, len(Variables.live_map_bt), total, 0)
 
 
-                else:
+                else:  # data frame — client tracking
 
-                    ap_mac = src if src in cls.live_map else (dst if dst in cls.live_map else None)
+                    ap_mac     = src if src in cls.live_map else (dst if dst in cls.live_map else None)
                     client_mac = dst if ap_mac == src else src
 
-                    if ap_mac and client_mac and client_mac != "ff:ff:ff:ff:ff:ff":
-                        if client_mac not in cls.live_map[ap_mac]["clients"]:
-                            cls.live_map[ap_mac]["clients"].add(client_mac)
-                            vendor = cls.DataBase.get_vendor_main(mac=client_mac, verbose=False)
+                    if not ap_mac or not client_mac or client_mac == "ff:ff:ff:ff:ff:ff": continue
+                    if client_mac in cls.live_map: continue  # don't add APs as clients
 
-                            ap_data       = cls.live_map[ap_mac]["data"]
-                            ap_name       = ap_data["ssid"]
-                            client_count  = len(cls.live_map[ap_mac]["clients"])
+                    if client_mac not in cls.live_map[ap_mac]["clients"]:
 
-                            data = (f"[{c3}][*] New Client:[/{c3}] {client_mac} -> AP: {ap_name} ({vendor})")
-                            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
-                            Variables.tui.call_from_thread(Variables.tui.add_client_to_tree, ap_mac, client_mac, vendor)
-                            Variables.tui.call_from_thread(Variables.tui.upsert_ap, ap_mac, ap_name, ap_data["vendor"], ap_data["channel"], ap_data["rssi"], client_count)
-                            Variables.push_event(f"New client connected to {ap_name}")
+                        cls.live_map[ap_mac]["clients"].add(client_mac)
+                        vendor       = cls.DataBase.get_vendor_main(mac=client_mac, verbose=False)
+                        ap           = cls.live_map[ap_mac]
+                        client_count = len(ap["clients"])
 
-
-                if now - last_deauth_check >= 10:
-                    for src in list(deauth_tracker.keys()):
-                        if now - deauth_tracker[src]["start_time"] > 10:
-                            del deauth_tracker[src]
-                    last_deauth_check = now
-
-
-                if now - last_check >= 5:
-
-                    cycle += 1
-
-                    for bssid, dev in list(cls.live_map.items()):
-
-                        time_missing = now - dev["last_seen"]
-                        client_count = len(dev["clients"])
-                        ssid_name = dev["data"]["ssid"]
-
-                        if client_count > dev["client_max"]:
-                            dev["client_max"] = client_count
-                            data = (f"[bold green][!] {ssid_name} new client max:[/bold green] {client_count}")
-                            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
-                            Variables.push_event(f"New maximum. {ssid_name} has {client_count} clients")
-
-                        if dev["client_max"] > 0 and client_count < dev["client_min"]:
-                            dev["client_min"] = client_count
-                            data = (f"[bold red][!] {ssid_name} new client min:[/bold red] {client_count}")
-                            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
-                            Variables.push_event(f"Alert. {ssid_name} client count dropped to {client_count}")
-
-                        if time_missing > 60:
-                            if dev["status"] != "offline":
-                                data = (f"[bold red][!] AP Offline:[yellow] {ssid_name} ({bssid})")
-                                Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
-                                dev["status"] = "offline"
-                                Variables.tui.call_from_thread(Variables.tui.upsert_ap, bssid, ssid_name, dev["data"]["vendor"], dev["data"]["channel"], dev["data"]["rssi"], client_count, "offline")
-                                Variables.push_event(f"Alert. Access point offline. {ssid_name}")
-                        else:
-                            if dev["status"] == "offline":
-                                data = (f"[bold green][+] AP Back Online:[yellow] {ssid_name} ({bssid})")
-                                Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
-                                dev["status"] = "stable"
-                                Variables.tui.call_from_thread(Variables.tui.upsert_ap, bssid, ssid_name, dev["data"]["vendor"], dev["data"]["channel"], dev["data"]["rssi"], client_count, "online")
-                                Variables.push_event(f"Access point back online. {ssid_name}")
-
-                        if time_missing > 180:
-                            data = (f"[bold yellow][-] Removing stale AP:[/bold yellow] {bssid}")
-                            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
-                            del cls.live_map[bssid]
-
-
-                    total = len(cls.live_map) or 1
-
-
-                    Variables.wifi_current = total
-
-                    if total > Variables.wifi_max:
-                        Variables.wifi_max = total
-                        data = (f"[bold green][!] New WiFi max:[/bold green] {total} APs")
-                        Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)    
-                        Variables.push_event(f"New maximum. {total} WiFi access points detected")
-
-                    if total < Variables.wifi_min:
-                        Variables.wifi_min = total
-                        data = (f"[bold red][!] New WiFi min:[/bold red] {total} APs")
+                        data = f"[bold yellow][*][/bold yellow] [yellow]{client_mac}[/yellow]  ->  [cyan]{ap['ssid']}[/cyan]  [dim]{vendor or ''}[/dim]"
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
-                        Variables.push_event(f"Alert. Access point count dropped to {total}")
+                        Variables.tui.call_from_thread(Variables.tui.add_client_to_tree, ap_mac, client_mac, vendor)
+                        Variables.tui.call_from_thread(Variables.tui.upsert_ap, ap_mac, ap["ssid"], ap["vendor"], ap["channel"], ap["rssi"], client_count)
 
-                    ble_count    = len(Variables.live_map_bt)
-                    all_clients  = sum(len(d["clients"]) for d in cls.live_map.values() if "clients" in d)
-                    Variables.tui.call_from_thread(Variables.tui.update_stats, ble_count, total, all_clients)
+                        total_clients = sum(len(d["clients"]) for d in cls.live_map.values())
+                        Variables.tui.call_from_thread(Variables.tui.update_stats, len(Variables.live_map_bt), len(cls.live_map), total_clients)
 
-                    last_check = now
 
-        except KeyboardInterrupt as e: 
-            data = (f"[bold red][!] WiFi Keyboard Exception Error:[bold yellow] {e}")
-            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
-
-        except Exception as e: 
-            data = (f"[bold red][!] WiFi Exception Error:[bold yellow] {e}")
-            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
-
+        except Exception as e:
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", f"[bold red][!] WiFi Error:[/bold red] {e}")
+        finally:
+            process.kill()
 
 
     @classmethod
     def main(cls):
-        """This will run class wide logic"""
 
-        cls.aps = 0
+        cls.aps      = 0
         cls.live_map = Variables.live_map_wifi
-        iface = Variables.iface_monitor
+        iface        = Variables.iface_monitor
 
-        try:
-            data = ("[yellow][+] WiFi AP & Client Monitoring Active")
-            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
-            Background_Threads.channel_hopper()
-            cls._pkt_handler(iface=iface)
-
-        except KeyboardInterrupt:
-            data = ("\n[bold red]Stopping....")
-            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)    
-        except Exception as e: 
-            data = (f"[bold red]WiFi Monitor Exception Error:[bold yellow] {e}")
-            Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
+        Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", "[yellow][+] WiFi Monitoring Active")
+        Background_Threads.channel_hopper()
+        cls._scanner(iface=iface)
 
 
 
