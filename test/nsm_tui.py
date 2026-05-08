@@ -2,6 +2,8 @@
 from textual.app import App, ComposeResult
 from textual.widgets import RichLog, Header, Footer, Label, DataTable, Tree, TabbedContent, TabPane
 from textual.containers import Horizontal
+import time
+from datetime import datetime
 
 # NSM IMPORTS
 from nsm_vars import Variables
@@ -52,20 +54,22 @@ class TUI(App):
         self.query_one("#wifi", RichLog).border_title = "WiFi"
 
         ble_table = self.query_one("#ble_table", DataTable)
-        _, self._ck_ble_rssi, _, _, _, _, self._ck_ble_status = ble_table.add_columns(
-            "#", "RSSI", "MAC", "Name", "Vendor", "Manufacturer", "Status"
+        _, self._ck_ble_rssi, _, _, _, _, self._ck_ble_first, self._ck_ble_session, self._ck_ble_status = ble_table.add_columns(
+            "#", "RSSI", "MAC", "Name", "Vendor", "Manufacturer", "First Seen", "Session", "Status"
         )
 
         ap_table = self.query_one("#ap_table", DataTable)
-        _, self._ck_ap_rssi, _, _, _, _, self._ck_ap_clients, self._ck_ap_status = ap_table.add_columns(
-            "#", "RSSI", "SSID", "BSSID", "Vendor", "Channel", "Clients", "Status"
+        _, self._ck_ap_rssi, _, _, _, _, self._ck_ap_clients, self._ck_ap_first, self._ck_ap_session, self._ck_ap_status = ap_table.add_columns(
+            "#", "RSSI", "SSID", "BSSID", "Vendor", "Channel", "Clients", "First Seen", "Session", "Status"
         )
 
         self.query_one("#wifi_tree", Tree).root.expand()
 
-        self._ble_rows    = {}
-        self._ap_rows     = {}
-        self._ap_branches = {}
+        self._ble_rows      = {}
+        self._ble_first_ts  = {}
+        self._ap_rows       = {}
+        self._ap_first_ts   = {}
+        self._ap_branches   = {}
 
         Variables.tui = self
         Monitor_Runner.main()
@@ -81,19 +85,35 @@ class TUI(App):
         )
 
 
+    @staticmethod
+    def _fmt_session(start_ts):
+        elapsed = int(time.time() - start_ts)
+        h, rem  = divmod(elapsed, 3600)
+        m, s    = divmod(rem, 60)
+        if h:    return f"{h}h {m}m"
+        if m:    return f"{m}m {s}s"
+        return f"{s}s"
+
+
     def upsert_ble(self, mac, vendor, manuf, name, rssi, status="online"):
         table = self.query_one("#ble_table", DataTable)
         color = "green" if status == "online" else "dim"
 
         if mac in self._ble_rows:
-            key = self._ble_rows[mac]
-            try: table.update_cell(key, self._ck_ble_rssi,   str(rssi))
+            key     = self._ble_rows[mac]
+            session = self._fmt_session(self._ble_first_ts[mac])
+            try: table.update_cell(key, self._ck_ble_rssi,    str(rssi))
             except: pass
-            try: table.update_cell(key, self._ck_ble_status, status)
+            try: table.update_cell(key, self._ck_ble_session, session)
+            except: pass
+            try: table.update_cell(key, self._ck_ble_status,  status)
             except: pass
         else:
+            now       = time.time()
+            first_str = datetime.now().strftime("%H:%M:%S")
+            self._ble_first_ts[mac] = now
             num = len(self._ble_rows) + 1
-            row = (str(num), str(rssi), f"[{color}]{mac}", name or "-", vendor or "-", manuf or "-", status)
+            row = (str(num), str(rssi), f"[{color}]{mac}", name or "-", vendor or "-", manuf or "-", first_str, "0s", status)
             self._ble_rows[mac] = table.add_row(*row)
 
 
@@ -102,16 +122,22 @@ class TUI(App):
         color = "green" if status == "online" else "dim"
 
         if bssid in self._ap_rows:
-            key = self._ap_rows[bssid]
+            key     = self._ap_rows[bssid]
+            session = self._fmt_session(self._ap_first_ts[bssid])
             try: table.update_cell(key, self._ck_ap_rssi,    str(rssi))
             except: pass
             try: table.update_cell(key, self._ck_ap_clients, str(clients))
             except: pass
+            try: table.update_cell(key, self._ck_ap_session, session)
+            except: pass
             try: table.update_cell(key, self._ck_ap_status,  status)
             except: pass
         else:
+            now       = time.time()
+            first_str = datetime.now().strftime("%H:%M:%S")
+            self._ap_first_ts[bssid] = now
             num = len(self._ap_rows) + 1
-            row = (str(num), str(rssi), f"[{color}]{ssid}", bssid, vendor or "-", str(channel), str(clients), status)
+            row = (str(num), str(rssi), f"[{color}]{ssid}", bssid, vendor or "-", str(channel), str(clients), first_str, "0s", status)
             self._ap_rows[bssid] = table.add_row(*row)
 
 

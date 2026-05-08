@@ -3,7 +3,7 @@
 
 
 # IMPORTS
-import json, socket, manuf, requests, subprocess, threading, time, random
+import json, socket, manuf, requests, subprocess, threading, time, random, sqlite3
 from pathlib import Path
 from scapy.all import RadioTap
 from scapy.layers.dot11 import Dot11Elt, Dot11Beacon
@@ -835,5 +835,90 @@ class Extensions():
 
         cls.last_count = data[0]
         cls.last_color = data[2]
+
+
+class DeviceLog():
+    """Persistent SQLite log of all seen devices across sessions."""
+
+    DB_PATH = Path(__file__).parent / "devices.db"
+
+    @classmethod
+    def _conn(cls):
+        return sqlite3.connect(cls.DB_PATH)
+
+    @classmethod
+    def init(cls):
+        with cls._conn() as c:
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS ble_devices (
+                    mac          TEXT PRIMARY KEY,
+                    name         TEXT,
+                    vendor       TEXT,
+                    manufacturer TEXT,
+                    first_seen   TEXT,
+                    last_seen    TEXT,
+                    times_seen   INTEGER DEFAULT 1
+                )
+            """)
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS wifi_aps (
+                    bssid      TEXT PRIMARY KEY,
+                    ssid       TEXT,
+                    vendor     TEXT,
+                    channel    TEXT,
+                    first_seen TEXT,
+                    last_seen  TEXT,
+                    times_seen INTEGER DEFAULT 1
+                )
+            """)
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS wifi_clients (
+                    mac        TEXT PRIMARY KEY,
+                    vendor     TEXT,
+                    ap_bssid   TEXT,
+                    first_seen TEXT,
+                    last_seen  TEXT,
+                    times_seen INTEGER DEFAULT 1
+                )
+            """)
+
+    @classmethod
+    def log_ble(cls, mac, name, vendor, manufacturer) -> bool:
+        """Returns True if brand new device, False if seen before."""
+        from datetime import datetime
+        now = datetime.now().isoformat(timespec="seconds")
+        with cls._conn() as c:
+            row = c.execute("SELECT times_seen FROM ble_devices WHERE mac=?", (mac,)).fetchone()
+            if row:
+                c.execute("UPDATE ble_devices SET last_seen=?, times_seen=times_seen+1 WHERE mac=?", (now, mac))
+                return False
+            c.execute("INSERT INTO ble_devices VALUES (?,?,?,?,?,?,1)", (mac, name, vendor, manufacturer, now, now))
+            return True
+
+    @classmethod
+    def log_ap(cls, bssid, ssid, vendor, channel) -> bool:
+        """Returns True if brand new AP, False if seen before."""
+        from datetime import datetime
+        now = datetime.now().isoformat(timespec="seconds")
+        with cls._conn() as c:
+            row = c.execute("SELECT times_seen FROM wifi_aps WHERE bssid=?", (bssid,)).fetchone()
+            if row:
+                c.execute("UPDATE wifi_aps SET last_seen=?, times_seen=times_seen+1 WHERE bssid=?", (now, bssid))
+                return False
+            c.execute("INSERT INTO wifi_aps VALUES (?,?,?,?,?,?,1)", (bssid, ssid, vendor, channel, now, now))
+            return True
+
+    @classmethod
+    def log_client(cls, mac, vendor, ap_bssid) -> bool:
+        """Returns True if brand new client, False if seen before."""
+        from datetime import datetime
+        now = datetime.now().isoformat(timespec="seconds")
+        with cls._conn() as c:
+            row = c.execute("SELECT times_seen FROM wifi_clients WHERE mac=?", (mac,)).fetchone()
+            if row:
+                c.execute("UPDATE wifi_clients SET last_seen=?, times_seen=times_seen+1 WHERE mac=?", (now, mac))
+                return False
+            c.execute("INSERT INTO wifi_clients VALUES (?,?,?,?,?,1)", (mac, vendor, ap_bssid, now, now))
+            return True
 
 

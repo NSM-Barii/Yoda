@@ -21,7 +21,7 @@ from datetime import datetime
 
 # NSM IMPORTS
 from nsm_vars import Variables
-from nsm_database import DataBase, Extensions, Background_Threads
+from nsm_database import DataBase, Extensions, Background_Threads, DeviceLog
 # from nsm_modules.nsm_utilities import Utilities, Connection_Handler
 
 
@@ -142,7 +142,8 @@ class Monitor_Bluetooth():
                             }
 
                             cls.devices += 1
-                            data = f"[bold blue]{cls.devices}[/bold blue]  [cyan]{mac}[/cyan]  [bold white]{name or '?'}[/bold white]  [dim]{vendor or manuf or ''}[/dim]  [dim]rssi:[/dim][bold magenta]{rssi}[/bold magenta]"
+                            DeviceLog.log_ble(mac, name, vendor, manuf)
+                            data = f"[bold blue]{cls.devices}[/bold blue]  [cyan]{mac}[/cyan]  [bold white]{name}[/bold white]  [dim]{vendor }[/dim]  [dim]rssi:[/dim][bold magenta]{rssi}[/bold magenta]"
                             Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                             Variables.tui.call_from_thread(Variables.tui.upsert_ble, mac, vendor, manuf, name, rssi)
                     
@@ -373,6 +374,7 @@ class Monitor_WiFi():
                         cls.live_map[src] = {"ssid": ssid, "channel": channel, "rssi": rssi, "vendor": vendor, "clients": set()}
 
                         cls.aps += 1
+                        DeviceLog.log_ap(src, ssid, vendor, channel)
                         data = f"[bold green][AP][/bold green]  [bold white]{ssid}[/bold white]  [dim]{src}[/dim]  [dim]ch:[/dim][bold cyan]{channel}[/bold cyan]  [dim]rssi:[/dim][bold magenta]{rssi}[/bold magenta]  [dim]{vendor or ''}[/dim]"
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                         Variables.tui.call_from_thread(Variables.tui.upsert_ap, src, ssid, vendor, channel, rssi, 0)
@@ -397,6 +399,7 @@ class Monitor_WiFi():
                         ap           = cls.live_map[ap_mac]
                         client_count = len(ap["clients"])
 
+                        DeviceLog.log_client(client_mac, vendor, ap_mac)
                         data = f"[bold yellow][CLIENT][/bold yellow]  [yellow]{client_mac}[/yellow]  [dim]->[/dim]  [bold white]{ap['ssid']}[/bold white]  [dim]{vendor or ''}[/dim]"
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                         Variables.tui.call_from_thread(Variables.tui.add_client_to_tree, ap_mac, client_mac, vendor)
@@ -533,7 +536,7 @@ class Monitor_Runner():
     def main():
         """Run module classess"""
 
-
+        DeviceLog.init()
 
         threading.Thread(target=Monitor_Bluetooth.main, args=(), daemon=True).start()
 
