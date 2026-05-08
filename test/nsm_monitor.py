@@ -142,7 +142,7 @@ class Monitor_Bluetooth():
                             }
 
                             cls.devices += 1
-                            data = f"[bold green][{cls.devices}][/bold green] [cyan]{mac}[/cyan]  [yellow]{name or '?'}[/yellow]  [dim]{vendor or manuf or ''}[/dim]  rssi:[bold]{rssi}[/bold]"
+                            data = f"[bold blue][BLE][/bold blue]  [cyan]{mac}[/cyan]  [bold white]{name or '?'}[/bold white]  [dim]{vendor or manuf or ''}[/dim]  [dim]rssi:[/dim][bold magenta]{rssi}[/bold magenta]"
                             Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                             Variables.tui.call_from_thread(Variables.tui.upsert_ble, mac, vendor, manuf, name, rssi)
                     
@@ -375,7 +375,7 @@ class Monitor_WiFi():
                         cls.live_map[src] = {"ssid": ssid, "channel": channel, "rssi": rssi, "vendor": vendor, "clients": set()}
 
                         cls.aps += 1
-                        data = f"[bold green][SSID][/bold green] [cyan]{ssid}[/cyan]  [dim]{src}[/dim]  ch:[bold]{channel}[/bold]  rssi:[bold]{rssi}[/bold]  [dim]{vendor or ''}[/dim]"
+                        data = f"[bold green][AP][/bold green]  [bold white]{ssid}[/bold white]  [dim]{src}[/dim]  [dim]ch:[/dim][bold cyan]{channel}[/bold cyan]  [dim]rssi:[/dim][bold magenta]{rssi}[/bold magenta]  [dim]{vendor or ''}[/dim]"
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                         Variables.tui.call_from_thread(Variables.tui.upsert_ap, src, ssid, vendor, channel, rssi, 0)
                         Variables.tui.call_from_thread(Variables.tui.add_ap_to_tree, src, ssid, rssi)
@@ -399,7 +399,7 @@ class Monitor_WiFi():
                         ap           = cls.live_map[ap_mac]
                         client_count = len(ap["clients"])
 
-                        data = f"[bold yellow][CLIENT][/bold yellow] [yellow]{client_mac}[/yellow]  ->  [cyan]{ap['ssid']}[/cyan]  [dim]{vendor or ''}[/dim]"
+                        data = f"[bold yellow][CLIENT][/bold yellow]  [yellow]{client_mac}[/yellow]  [dim]->[/dim]  [bold white]{ap['ssid']}[/bold white]  [dim]{vendor or ''}[/dim]"
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                         Variables.tui.call_from_thread(Variables.tui.add_client_to_tree, ap_mac, client_mac, vendor)
                         Variables.tui.call_from_thread(Variables.tui.upsert_ap, ap_mac, ap["ssid"], ap["vendor"], ap["channel"], ap["rssi"], client_count)
