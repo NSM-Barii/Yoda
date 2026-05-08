@@ -221,6 +221,8 @@ class Monitor_Bluetooth():
                     if time_missing > 30:
                         data = (f"[bold yellow][-] Removing stale device:[/bold yellow] {mac}")
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
+                        dev_data = dev["data"]
+                        Variables.tui.call_from_thread(Variables.tui.upsert_ble, mac, dev_data.get("vendor"), dev_data.get("manuf"), dev_data.get("name"), dev_data.get("rssi"), "offline")
                         unstable_devices.discard(mac)
                         del cls.live_map[mac]
 

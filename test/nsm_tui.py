@@ -24,14 +24,14 @@ class TUI(App):
 
 
     CSS = """
-    #stats{
-        height: 5;
-        border: round grey;
-    }
-    #stats_ble, #stats_aps, #stats_clients{
-        width: 1fr;
-        border: round yellow;
-        content-align: center middle;
+    #stats {
+        dock: top;
+        height: 1;
+        width: auto;
+        offset-x: -2;
+        layer: above;
+        content-align: right middle;
+        padding: 0 1;
     }
     TabbedContent {
         height: 1fr;
@@ -76,11 +76,7 @@ class TUI(App):
 
 
         yield Header(id="yoda")
-
-        with Horizontal(id="stats"):
-            yield Label("", id="stats_ble")
-            yield Label("", id="stats_aps")
-            yield Label("", id="stats_clients")
+        yield Label("BLE: 0  |  APs: 0  |  Clients: 0", id="stats")
 
         with TabbedContent():
 
@@ -139,9 +135,9 @@ class TUI(App):
     def update_stats(self, ble:int, wifi_aps:int, wifi_clients:int):
         """This will be used to update the status bar"""
 
-        self.query_one("#stats_ble",     Label).update(f"[bold red]BLE: {ble}")
-        self.query_one("#stats_aps",     Label).update(f"[bold green]APs: {wifi_aps}")
-        self.query_one("#stats_clients", Label).update(f"[bold blue]Clients: {wifi_clients}")
+        self.query_one("#stats", Label).update(
+            f"[bold red]BLE: {ble}[/bold red]  [dim]|[/dim]  [bold green]APs: {wifi_aps}[/bold green]  [dim]|[/dim]  [bold blue]Clients: {wifi_clients}[/bold blue]"
+        )
 
 
     def upsert_ble(self, mac, vendor, manuf, name, rssi, status="online"):
@@ -158,6 +154,8 @@ class TUI(App):
                 table.update_cell(self._ble_rows[mac], "RSSI",   str(rssi))
                 table.update_cell(self._ble_rows[mac], "Status", status)
             except Exception:
+                try: table.remove_row(self._ble_rows[mac])
+                except: pass
                 del self._ble_rows[mac]
                 key = table.add_row(*row)
                 self._ble_rows[mac] = key
@@ -181,6 +179,8 @@ class TUI(App):
                 table.update_cell(self._ap_rows[bssid], "Clients", str(clients))
                 table.update_cell(self._ap_rows[bssid], "Status",  status)
             except Exception:
+                try: table.remove_row(self._ap_rows[bssid])
+                except: pass
                 del self._ap_rows[bssid]
                 key = table.add_row(*row)
                 self._ap_rows[bssid] = key
