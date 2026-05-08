@@ -357,7 +357,7 @@ class Monitor_WiFi():
                 if not src or src == "ff:ff:ff:ff:ff:ff": continue
 
 
-                if ft == 0x08:  # beacon — AP discovery
+                if ft == 0x08:
 
                     if raw:
                         try:    ssid = bytes.fromhex(raw).decode("utf-8", errors="ignore")
@@ -380,13 +380,13 @@ class Monitor_WiFi():
                         Variables.tui.call_from_thread(Variables.tui.update_stats, len(Variables.live_map_bt), total, 0)
 
 
-                else:  # data frame — client tracking
+                else:  
 
                     ap_mac     = src if src in cls.live_map else (dst if dst in cls.live_map else None)
                     client_mac = dst if ap_mac == src else src
 
                     if not ap_mac or not client_mac or client_mac == "ff:ff:ff:ff:ff:ff": continue
-                    if client_mac in cls.live_map: continue  # don't add APs as clients
+                    if client_mac in cls.live_map: continue  
 
                     if client_mac not in cls.live_map[ap_mac]["clients"]:
 
