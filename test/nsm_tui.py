@@ -82,13 +82,15 @@ class TUI(App):
         color = "green" if status == "online" else "dim"
 
         if mac in self._ble_rows:
-            table.update_cell(mac, "RSSI",   str(rssi))
-            table.update_cell(mac, "Status", status)
+            key = self._ble_rows[mac]
+            try: table.update_cell(key, "RSSI",   str(rssi))
+            except: pass
+            try: table.update_cell(key, "Status", status)
+            except: pass
         else:
             num = len(self._ble_rows) + 1
             row = (str(num), str(rssi), f"[{color}]{mac}", name or "-", vendor or "-", manuf or "-", status)
-            self._ble_rows[mac] = True
-            table.add_row(*row, key=mac)
+            self._ble_rows[mac] = table.add_row(*row)
 
 
     def upsert_ap(self, bssid, ssid, vendor, channel, rssi, clients, status="online"):
@@ -96,14 +98,17 @@ class TUI(App):
         color = "green" if status == "online" else "dim"
 
         if bssid in self._ap_rows:
-            table.update_cell(bssid, "RSSI",    str(rssi))
-            table.update_cell(bssid, "Clients", str(clients))
-            table.update_cell(bssid, "Status",  status)
+            key = self._ap_rows[bssid]
+            try: table.update_cell(key, "RSSI",    str(rssi))
+            except: pass
+            try: table.update_cell(key, "Clients", str(clients))
+            except Exception as e: self.push_data("#wifi", f"[red]clients err: {e}")
+            try: table.update_cell(key, "Status",  status)
+            except: pass
         else:
             num = len(self._ap_rows) + 1
             row = (str(num), str(rssi), f"[{color}]{ssid}", bssid, vendor or "-", str(channel), str(clients), status)
-            self._ap_rows[bssid] = True
-            table.add_row(*row, key=bssid)
+            self._ap_rows[bssid] = table.add_row(*row)
 
 
     def add_ap_to_tree(self, bssid, ssid, rssi):
