@@ -608,8 +608,25 @@ class Notifications():
         cls._push_ntfy(headers=headers, data=data)
 
     
+    
     @classmethod
-    def unstable_devices(cls,  unstable_ratio:float, priority="max"):
+    def unstable_device(cls, mac:str, vendor:str, title:str, priority="max"):
+        """This will cls.push_ntfy <-- unstable_device"""
+
+        headers = {
+            "Title": f"{title}",
+            "Priority": priority,
+        }
+        data = f"Unstable Device: {mac}  Vendor: {vendor}"
+
+
+        cls._push_ntfy(headers=headers, data=data)
+    
+
+
+
+    @classmethod
+    def unstable_devices_ratio(cls,  unstable_ratio:float, priority="max"):
         """This will cls.push_ntfy <-- unstable_devices"""
 
         headers = {
@@ -899,10 +916,11 @@ class Extensions():
         valid = ["green", "yellow", "orange", "red", "purple"]
         
         if cls.last_count < current_count:
-            say = f"[bold green][UP] ATTENTION, the amount of devices in your area has increased from {cls.last_count} to {current_count}. up {percent} percent!"
+            say = f"[bold green][UP] Device surge detected:[/bold green] {cls.last_count} → {current_count} (+{percent}%)"
 
         elif cls.last_count > current_count:
-            say = f"[bold red][DOWN] ATTENTION, the amount of devices in your area has decreased from {cls.last_count} to {current_count}. down {percent} percent!"
+            say = f"[bold red][DOWN] Device drop detected:[/bold red] {cls.last_count} → {current_count} (-{percent}%)"
+
 
         else: return
 
