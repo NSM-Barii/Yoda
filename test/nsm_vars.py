@@ -79,7 +79,7 @@ class Variables():
     verbose   = False
 
 
-    ntfy = False
+    ntfy_path = False
 
 
     lan_current = 0

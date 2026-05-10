@@ -557,6 +557,108 @@ class DataBase():
 
                         break
 
+    
+
+
+
+
+class Notifications():
+    """This will be used to notify user of events happening"""
+
+
+    @classmethod
+    def new_ap(cls, ssid:str, bssid:str, channel:int, vendor:str, priority="max"):
+        """This will cls.push_ntfy <-- new_ap"""
+
+        headers = {
+            "Title": "New AP Detected",
+            "Priority": priority,
+        }
+        data = f"SSID: {ssid}  BSSID: {bssid}  Ch: {channel}  Vendor: {vendor}"
+
+
+        cls._push_ntfy(headers=headers, data=data)
+
+    
+    @classmethod
+    def new_client(cls, ssid:str, vendor_ssid:str, client_mac:str, vendor_client:str, priority="max"):
+        """This will cls.push_ntfy <-- new_client"""
+
+        headers = {
+            "Title": f"New Client on {ssid}",
+            "Priority": priority,
+        }
+        data = f"Client: {client_mac} - vendor_client: {vendor_client}  -->  SSID: {ssid}  Vendor_ssid: {vendor_ssid}"
+
+
+        cls._push_ntfy(headers=headers, data=data)
+
+    
+    @classmethod
+    def client_left(cls, ssid:str, vendor_ssid:str, client_mac:str, vendor_client:str, priority="max"):
+        """This will cls.push_ntfy <-- client_left"""
+
+        headers = {
+            "Title": f"Client left {ssid}",
+            "Priority": priority,
+        }
+        data = f"Client: {client_mac} - vendor_client: {vendor_client}  -->  SSID: {ssid}  Vendor_ssid: {vendor_ssid}"
+
+
+        cls._push_ntfy(headers=headers, data=data)
+
+    
+    @classmethod
+    def unstable_devices(cls,  unstable_ratio:float, priority="max"):
+        """This will cls.push_ntfy <-- unstable_devices"""
+
+        headers = {
+            "Title": "Unstable BLE Devices",
+            "Priority": priority,
+        }
+        data = f"Unstable Ratio: {unstable_ratio} \nPossible BLE/Bluetooth Jamming"
+
+
+        cls._push_ntfy(headers=headers, data=data)
+
+    
+    @classmethod
+    def drop_score(cls, drop_score:float, priority="max"):
+        """This will cls.push_ntfy <-- drop_score"""
+
+        headers = {
+            "Title": "Alot of BLE/Bluetooth Drop Score",
+            "Priority": priority,
+        }
+        data = f"Drop Score: {drop_score}\nA large spike of BLE/Bluetooth devices have dropped in a short timeframe!"
+
+
+        cls._push_ntfy(headers=headers, data=data)
+
+
+    @classmethod
+    def _push_ntfy(cls, headers, data):
+        """This will be used to push notifications to a server to view via (mainly) phone"""
+        
+
+        ntfy_path = Variables.ntfy_path
+        if not ntfy_path: return False
+
+        url = f"https://ntfy.sh/{ntfy_path}"
+
+        try:
+
+            response = requests.post(url=url, headers=headers)
+
+            code = response.status_code
+
+            if code in [200, 204]: console.print(f"[bold green][+] NTFY Notification successfully pushed!")
+            else:                  console.print(f"[bold red][-] NTFY Notification Failed to push!")
+        
+
+        except Exception as e: console.print(f"[bold red][!] Exception error:[bold yellow] Failed to make requests.post!")
+
+
 
 
 
@@ -566,9 +668,6 @@ class Background_Threads:
     # CLASS VARIABLES
     hop = True
     channel = 0
-
-
-
 
 
     @classmethod
@@ -711,8 +810,6 @@ class Background_Threads:
 
 
 
-
-
 class Extensions():
     """This will run extneded codes"""
 
@@ -739,7 +836,6 @@ class Extensions():
         return round(score, 3)
 
         
-
     @classmethod
     def _change_color(cls, current_count, average_ratio, server_ip, timeout=3):
         """This will send push a http --> ESP32"""
@@ -790,8 +886,6 @@ class Extensions():
         return data
         
 
-
-
     @classmethod
     def _tts_google(cls, data=False, verbose=True):
         """This will be responsible for pushing sound to --> Yoda Audio player"""
@@ -820,8 +914,6 @@ class Extensions():
             #console.print(f"{cls.last_count} --> {current_count}")
 
         
-
-
     @classmethod
     def Controller(cls, current_count: int, server_ip: str):
         """This one method will be responbile for calling and handling all methods within this class <--"""
