@@ -28,6 +28,9 @@ class TUI(App):
     """
 
     def compose(self):
+        """This will initialize the TUI"""
+
+
         yield Header(id="yoda")
         yield Label("BLE: 0  |  APs: 0  |  Clients: 0", id="stats")
 
@@ -50,6 +53,9 @@ class TUI(App):
 
 
     def on_mount(self):
+        """This will add to said initialized TUI"""
+
+
         self.query_one("#ble",  RichLog).border_title = "Bluetooth/BLE"
         self.query_one("#wifi", RichLog).border_title = "WiFi"
 
@@ -76,13 +82,15 @@ class TUI(App):
 
 
     def push_data(self, id, data):
+        """This will be used to push data"""
+
         self.query_one(str(id), RichLog).write(data)
 
 
     def update_stats(self, ble: int, wifi_aps: int, wifi_clients: int):
-        self.query_one("#stats", Label).update(
-            f"[bold red]BLE: {ble}[/bold red]  [dim]|[/dim]  [bold green]APs: {wifi_aps}[/bold green]  [dim]|[/dim]  [bold blue]Clients: {wifi_clients}[/bold blue]"
-        )
+        """This will be used to update stats"""
+
+        self.query_one("#stats", Label).update(f"[bold red]BLE: {ble}[/bold red]  [dim]|[/dim]  [bold green]APs: {wifi_aps}[/bold green]  [dim]|[/dim]  [bold blue]Clients: {wifi_clients}[/bold blue]")
 
 
     @staticmethod

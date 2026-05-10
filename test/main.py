@@ -10,39 +10,49 @@ Usage:
     python main.py --full             # Everything (MCP + Monitoring + Voice)
 """
 
+
+
+# UI IMPORTS
+from rich.panel import Panel
+
+
+
+# ETC IMPORTS
 import threading, time, sys, argparse
 
 
 # NSM IMPORTS
 from nsm_vars import Variables
+from nsm_tui import TUI
 import nsm_server_mcp
 import nsm_voice_agent
 
 
-def main():
+# CONSTANTS
+console = Variables.console
+
+
+def main_no():
     """Start YODA components based on arguments."""
 
     args = sys.argv[1:]
 
-    # Parse arguments
     start_mcp = "--mcp" in args or "--full" in args
     start_monitoring = "--monitor" in args or "--full" in args
 
-    print("\n" + "="*60)
-    print("YODA - Voice-Activated Network Security System")
-    print("="*60)
+    
+    console.print("\n" + "="*60)
+    console.print(f"[bold green][!] Yoda Voice-Activated Network Security system!")
+    console.print("="*60)
 
-    # Start MCP server
+
     if start_mcp:
-        print("[+] Starting MCP Server in background...")
-        threading.Thread(
-            target=nsm_server_mcp.main,
-            daemon=True,
-            name="MCP-Server"
-        ).start()
-        time.sleep(1)  # Give it a second to start
 
-    # Start monitoring
+        console.print("[+] Starting MCP Server in background...")
+        threading.Thread(target=nsm_server_mcp.main, daemon=True, name="MCP-Server").start()
+        time.sleep(1) 
+
+
     if start_monitoring:
         print("[+] Starting Monitoring in background...")
 
@@ -56,13 +66,6 @@ def main():
                 daemon=True,
                 name="BLE-Monitor"
             ).start()
-
-            # Uncomment to start deauth monitoring
-            # threading.Thread(
-            #     target=Monitor_Deauth_Tshark.main,
-            #     daemon=True,
-            #     name="Deauth-Monitor"
-            # ).start()
 
             print("[+] Monitoring active (BLE)")
 
@@ -85,5 +88,45 @@ def main():
         print("\n[!] Shutting down YODA...")
 
 
-if __name__ == "__main__":
-    main()
+def main():
+    """This will be used to start main program"""
+
+    data = (
+        "[bold cyan]\n Wireless Reconnesiance System"
+        "[bold yellow]\n\n BLE • WiFi • LAN"
+        "[bold magenta]\n\n Made by NSM Barii"
+    )
+
+    panel = Panel(renderable=data, style="bold red")
+
+
+    parser = argparse.ArgumentParser(
+        add_help=False,
+        description="This is a Wireless Reconnesiance System designed to monitor surrounds connections and APs"
+    )
+
+    parser.add_argument("-i", help="This be used to pass the interface used for monitor mode // for wireless sniffing")
+    parser.add_argument("-nfty", help="This will be used to pass the server to push data to for notifications")
+    parser.add_argument("-help", help="This will show the help of all arguments and the program title")
+
+
+    args = parser.parse_args()
+
+
+    if args.help: 
+        console.print(panel)
+        parser.print_help()
+        return False
+
+
+
+    Variables.iface_monitor = args.i or "wlan1"
+    Variables.ntfy_path     = args.ntfy or False
+
+
+    TUI().run()
+
+
+
+
+if __name__ == "__main__": main()

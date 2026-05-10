@@ -79,6 +79,9 @@ class Variables():
     verbose   = False
 
 
+    ntfy = False
+
+
     lan_current = 0
     lan_max     = 0
     lan_min     = 0
