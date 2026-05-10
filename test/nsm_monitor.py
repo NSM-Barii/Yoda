@@ -371,7 +371,7 @@ class Monitor_WiFi():
                     if src not in cls.live_map:
 
                         vendor = cls.DataBase.get_vendor_main(mac=src, verbose=False)
-                        cls.live_map[src] = {"ssid": ssid, "channel": channel, "rssi": rssi, "vendor": vendor, "clients": set()}
+                        cls.live_map[src] = {"ssid": ssid, "channel": channel, "rssi": rssi, "vendor": vendor, "clients": {}}
 
                         cls.aps += 1
                         DeviceLog.log_ap(src, ssid, vendor, channel)
@@ -392,9 +392,10 @@ class Monitor_WiFi():
                     if not ap_mac or not client_mac or client_mac == "ff:ff:ff:ff:ff:ff": continue
                     if client_mac in cls.live_map: continue  
 
+                    now_ts = time.time()
                     if client_mac not in cls.live_map[ap_mac]["clients"]:
 
-                        cls.live_map[ap_mac]["clients"].add(client_mac)
+                        cls.live_map[ap_mac]["clients"][client_mac] = now_ts
                         vendor       = cls.DataBase.get_vendor_main(mac=client_mac, verbose=False)
                         ap           = cls.live_map[ap_mac]
                         client_count = len(ap["clients"])
@@ -408,10 +409,27 @@ class Monitor_WiFi():
                         total_clients = sum(len(d["clients"]) for d in cls.live_map.values())
                         Variables.tui.call_from_thread(Variables.tui.update_stats, len(Variables.live_map_bt), len(cls.live_map), total_clients)
 
+                    else:
+                        cls.live_map[ap_mac]["clients"][client_mac] = now_ts
+
 
         except Exception as e: Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", f"[bold red][!] WiFi Error:[/bold red] {e}")
         finally: process.kill()
 
+
+    @classmethod
+    def _client_watchdog(cls, timeout=60):
+        while True:
+            time.sleep(30)
+            now = time.time()
+            for ap_mac, ap in list(cls.live_map.items()):
+                for client_mac, last_seen in list(ap["clients"].items()):
+                    if now - last_seen > timeout:
+                        del ap["clients"][client_mac]
+                        data = f"[dim][CLIENT LEFT]  {client_mac}  ->  {ap['ssid']}[/dim]"
+                        Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
+                        total_clients = sum(len(d["clients"]) for d in cls.live_map.values())
+                        Variables.tui.call_from_thread(Variables.tui.update_stats, len(Variables.live_map_bt), len(cls.live_map), total_clients)
 
     @classmethod
     def main(cls):
@@ -421,6 +439,7 @@ class Monitor_WiFi():
         iface        = Variables.iface_monitor
 
         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", "[yellow][+] WiFi Monitoring Active")
+        threading.Thread(target=cls._client_watchdog, daemon=True).start()
         Background_Threads.channel_hopper()
         cls._scanner(iface=iface)
 

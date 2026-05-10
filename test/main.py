@@ -92,22 +92,29 @@ def main():
     """This will be used to start main program"""
 
     data = (
-        "[bold cyan]\n Wireless Reconnesiance System"
-        "[bold yellow]\n\n BLE • WiFi • LAN"
-        "[bold magenta]\n\n Made by NSM Barii"
+        "[bold cyan]  Y O D A[/bold cyan]"
+        "\n[dim]  Passive RF Monitoring System[/dim]"
+        "\n\n[bold white]  Monitors[/bold white]"
+        "\n[bold blue]  •[/bold blue] [white]Bluetooth/BLE[/white]   [dim]— nearby devices, vendors, signal strength[/dim]"
+        "\n[bold green]  •[/bold green] [white]WiFi APs[/white]       [dim]— access points, channels, client counts[/dim]"
+        "\n[bold yellow]  •[/bold yellow] [white]WiFi Clients[/white]   [dim]— devices connecting to nearby networks[/dim]"
+        "\n\n[bold white]  Usage[/bold white]"
+        "\n  [dim]python main.py [/dim][cyan]-i wlan1[/cyan]"
+        "\n  [dim]python main.py [/dim][cyan]-i wlan1 -ntfy my-topic-123[/cyan]"
+        "\n\n[dim]  Made by NSM Barii[/dim]"
     )
 
-    panel = Panel(renderable=data, style="bold red")
+    panel = Panel(renderable=data, style="bold red", border_style="bold red", padding=(1, 2))
 
 
     parser = argparse.ArgumentParser(
         add_help=False,
-        description="This is a Wireless Reconnesiance System designed to monitor surrounds connections and APs"
+        description="Yoda — Passive RF monitoring. Tracks BLE devices, WiFi APs, and clients in your area."
     )
 
-    parser.add_argument("-i", help="This be used to pass the interface used for monitor mode // for wireless sniffing")
-    parser.add_argument("-nfty", help="This will be used to pass the server to push data to for notifications")
-    parser.add_argument("-help", help="This will show the help of all arguments and the program title")
+    parser.add_argument("-i",    metavar="IFACE",  help="Monitor mode interface (default: wlan1)")
+    parser.add_argument("-ntfy", metavar="TOPIC",  help="ntfy topic for push notifications (e.g. my-topic-123)")
+    parser.add_argument("-help", action="store_true", help="Show this help message")
 
 
     args = parser.parse_args()
@@ -120,7 +127,7 @@ def main():
 
 
 
-    Variables.iface_monitor = args.i or "wlan1"
+    Variables.iface_monitor = args.i    or "wlan1"
     Variables.ntfy_path     = args.ntfy or False
 
 
