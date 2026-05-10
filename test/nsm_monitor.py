@@ -21,7 +21,7 @@ from datetime import datetime
 
 # NSM IMPORTS
 from nsm_vars import Variables
-from nsm_database import DataBase, Extensions, Background_Threads, DeviceLog
+from nsm_database import DataBase, Extensions, Background_Threads, DeviceLog, Notifications
 # from nsm_modules.nsm_utilities import Utilities, Connection_Handler
 
 
@@ -168,6 +168,9 @@ class Monitor_Bluetooth():
                     if len(rssi_list) >= 3 and max(rssi_list) - min(rssi_list) > 30: 
                         weight += 1
                         data = (f"{use}[yellow] rssi spike")
+
+                        vendor = DataBase.Bluetooth.get_vendor_main(mac=mac)
+                        Notifications.unstable_device(mac=mac, vendor=vendor, title="RSSI Spike")
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
 
                     if (time_missing > 5): 
@@ -177,6 +180,9 @@ class Monitor_Bluetooth():
                     if (time_missing > 10): 
                         weight += 2
                         data = (f"{use}[yellow] long time gap")
+
+                        vendor = DataBase.Bluetooth.get_vendor_main(mac=mac)
+                        Notifications.unstable_device(mac=mac, vendor=vendor, title="Long time gap")
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
 
 
@@ -205,9 +211,10 @@ class Monitor_Bluetooth():
                                 dev["stable_count"] = 0
                                 unstable_devices.discard(mac)
                                 data = (f"[bold green][+] Device now stable:[yellow] {mac}")
-                                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
 
-                                Variables.push_event(f"Device stabilized")
+                                vendor = DataBase.Bluetooth.get_vendor_main(mac=mac)
+                                Notifications.unstable_device(mac=mac, vendor=vendor, title="Device now Stable") 
+                                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
 
 
 
@@ -229,7 +236,6 @@ class Monitor_Bluetooth():
         
 
                 
-
                 # WILL MAKE A GLOBALIZED SAVE FOR ALL INFO FROM ALL MONITOR METHODS
                 # DataBase.push_results(devices=cls.war_drive, verbose=False)
 
@@ -247,13 +253,6 @@ class Monitor_Bluetooth():
                 unstable_pct = round(unstable_ratio * 100, 2)
                 drop_pct     = round(drop_score * 100, 2)
 
-                c1 = "bold yellow"
-                panel.renderable = (
-                    f"Session Devices:[{c1}] {total}[/{c1}]  -  "
-                    f"Unstable Devices:[{c1}] {unstables}[/{c1}]  -  "
-                    f"Unstable Ratio:[{c1}] {unstable_pct}%[/{c1}]  -  "
-                    f"Drop Score:[{c1}] {drop_pct}%[/{c1}]"
-                )
 
 
                 Variables.ble_current = total
@@ -383,6 +382,8 @@ class Monitor_WiFi():
                         total = len(cls.live_map)
                         Variables.tui.call_from_thread(Variables.tui.update_stats, len(Variables.live_map_bt), total, 0)
 
+                        Notifications.new_ap(ssid=ssid, bssid=src, channel=channel, vendor=vendor)
+
 
                 else:  
 
@@ -408,6 +409,11 @@ class Monitor_WiFi():
 
                         total_clients = sum(len(d["clients"]) for d in cls.live_map.values())
                         Variables.tui.call_from_thread(Variables.tui.update_stats, len(Variables.live_map_bt), len(cls.live_map), total_clients)
+                        
+                        ssid          = cls.live_map[ap_mac]["ssid"]
+                        vendor_ssid   = cls.live_map[ap_mac]["vendor"]
+                        vendor_client = DataBase.WiFi.get_vendor_main(mac=client_mac)
+                        Notifications.new_client(ssid=ssid, vendor_ssid=vendor_ssid, client_mac=client_mac, vendor_client=vendor_client)
 
                     else:
                         cls.live_map[ap_mac]["clients"][client_mac] = now_ts
@@ -419,17 +425,36 @@ class Monitor_WiFi():
 
     @classmethod
     def _client_watchdog(cls, timeout=60):
+        """This method will be used to track when clients on aps go missing"""
+
+
         while True:
+
             time.sleep(30)
             now = time.time()
+
             for ap_mac, ap in list(cls.live_map.items()):
                 for client_mac, last_seen in list(ap["clients"].items()):
+
                     if now - last_seen > timeout:
-                        del ap["clients"][client_mac]
+
+                       
                         data = f"[dim][CLIENT LEFT]  {client_mac}  ->  {ap['ssid']}[/dim]"
-                        Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                         total_clients = sum(len(d["clients"]) for d in cls.live_map.values())
+                        
+                        Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                         Variables.tui.call_from_thread(Variables.tui.update_stats, len(Variables.live_map_bt), len(cls.live_map), total_clients)
+                        
+
+                        ssid          =  ap["ssid"]
+                        vendor_ssid   =  ap["vendor"]
+                        vendor_client =  DataBase.WiFi.get_vendor_main(mac=client_mac)
+                        
+                        Notifications.client_left(ssid=ssid, vendor_ssid=vendor_ssid, client_mac=client_mac, vendor_client=vendor_client)
+
+                        del ap["clients"][client_mac]
+
+
 
     @classmethod
     def main(cls):
