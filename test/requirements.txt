@@ -6,6 +6,7 @@ asyncio
 manuf
 rich
 textual
+pyfiglet
 
 
 # LLM / Voice Agent

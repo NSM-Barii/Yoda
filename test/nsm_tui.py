@@ -1,8 +1,14 @@
+# THIS FILE WILL BE USED TO CREATE SMOOTH USER INTERFACES
+
+
 # TUI IMPORTS
 from textual.app import App, ComposeResult
 from textual.widgets import RichLog, Header, Footer, Label, DataTable, Tree, TabbedContent, TabPane
 from textual.containers import Horizontal
-import time
+
+
+# ETC IMPORTS
+import time, pyfiglet
 from datetime import datetime
 
 # NSM IMPORTS
@@ -173,6 +179,16 @@ class TUI(App):
 class CLI():
     """This will be used to get custom vars from user before transitioning to the TUI"""
 
+
+    @classmethod
+    def _print_welcome(cls):
+        """This will be used to print Yoda"""
+
+
+        text = pyfiglet.format(text="Yoda", font="bloody")
+        console.print(text, "\nWireless reconnesiance framework for spectrum spying")
+
+
     
     @classmethod
     def _check_vars(cls):
@@ -189,6 +205,39 @@ class CLI():
         if Variables.ntfy_wifi_path:
             return False
     
+
+    @classmethod
+    def _default_vars(cls):
+        """This will print the default vars as the user can just keep tapping enter"""
+
+        c1 = "bold green"
+        c2 = "bold yellow"
+        c3 = "bold red"
+        c4 = "bold blue"
+
+
+        stats = (
+            f"[{c1}] [+] WiFi Interface:[{c4}] {Variables.iface_monitor}"
+            #f"\n[{c1}] [+] BT Interface:[{c4}] {Variables.bface}"
+            f"\n[{c1}] [+] NTFY wifi_path:[{c4}] {Variables.ntfy_ble_path}"
+            f"\n[{c1}] [+] NTFY ble_path:[{c4}] {Variables.ntfy_wifi_path}"
+            f"\n[{c1}] [+] WiFi client_idle:[{c4}] {Variables.wifi_client_idle}"
+            f"\n[{c1}] [+] WiFi client_offline:[{c4}] {Variables.wifi_client_offline}"
+            f"\n[{c1}] [+] BLE pct_set_unstable:[{c4}] {Variables.pct_set_unstable}"
+            f"\n[{c1}] [+] BLE pct_set_drop:[{c4}] {Variables.pct_set_drop}"
+            f"\n[{c1}] [+] WiFi Hop Delay:[{c4}] {Variables.wifi_hop_delay}s"
+            f"\n[{c1}] [+] Verbose:[{c4}] {Variables.verbose}"
+        )
+
+        console.print(f"[bold green][+] Default Variables below!!!")
+        console.print(
+            f"\n[{c1}]=========   Default Variables   =========\n",
+            stats,
+            f"\n[{c1}]=================================\n"
+        )
+        console.print(f"\n\n[bold red][!] Keeping tapping enter if you dont know what values to input, or read the README.md you skidd!!!")
+        time.sleep(2)
+
 
     @classmethod
     def _set_vars(cls):
@@ -266,14 +315,18 @@ class CLI():
         )
     
 
-
     @classmethod
     def main(cls):
         """This will control cli var assignment"""
+  
 
-
+        cls._default_vars()      
+        cls._default_vars()
         if cls._check_vars(): cls._set_vars()
         cls._print_vars()
+        
+        time.sleep(2)
+        console.input(f"\n\n[bold blue][!] Press Enter to Acknowledge your Vars!")
 
 
 
