@@ -185,7 +185,7 @@ class CLI():
         """This will be used to print Yoda"""
 
 
-        text = pyfiglet.format(text="Yoda", font="bloody")
+        text = pyfiglet.figlet_format(text="Yoda", font="bloody")
         console.print(text, "\nWireless reconnesiance framework for spectrum spying")
 
 
@@ -235,7 +235,7 @@ class CLI():
             stats,
             f"\n[{c1}]=================================\n"
         )
-        console.print(f"\n\n[bold red][!] Keeping tapping enter if you dont know what values to input, or read the README.md you skidd!!!")
+        console.print(f"\n[bold red][!] Keeping tapping enter if you dont know what values to input, or read the README.md you skidd!!!\n\n")
         time.sleep(2)
 
 
@@ -253,7 +253,8 @@ class CLI():
         p1 = "[+]"
         p2 = "[*]"
 
-
+        
+        console.print("=" * 20) 
         iface = console.input(f"[{c5}]{p2} iface_monitor:[/{c5}] ")
 
         wifi_hops      = console.input(f"[{c5}]{p2} wifi_hops:[/{c5}] ")
@@ -267,6 +268,7 @@ class CLI():
 
         ntfy_ble_path  = console.input(f"[{c5}]{p2} ntfy_ble_path:[/{c5}] ")
         ntfy_wifi_path = console.input(f"[{c5}]{p2} ntfy_wifi_path:[/{c5}] ")
+        console.print("=" * 20) 
 
 
         if wifi_hops in Variables.presets: Variables.wifi_hops = Variables.presets[wifi_hops]
@@ -319,14 +321,13 @@ class CLI():
     def main(cls):
         """This will control cli var assignment"""
   
-
-        cls._default_vars()      
+   
         cls._default_vars()
         if cls._check_vars(): cls._set_vars()
         cls._print_vars()
         
         time.sleep(2)
-        console.input(f"\n\n[bold blue][!] Press Enter to Acknowledge your Vars!")
+        console.input(f"\n\n[bold red][!] Press Enter to Acknowledge your Vars!")
 
 
 
