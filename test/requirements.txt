@@ -5,6 +5,7 @@ ipaddress
 asyncio
 manuf
 rich
+textual
 
 
 # LLM / Voice Agent

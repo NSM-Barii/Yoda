@@ -71,19 +71,40 @@ class Variables():
     refresh_per_second = 1
     
     
-    iface_monitor = "wlan1"  # FOR MONITOR MODE
     iface_managed = False
     subnet    = "192.168.1.0/24"
     ip_router = "192.168.1.1"
     ip_local  = False
     verbose   = False
 
+    
 
-    ntfy_path = False
+    # MONITORING VARS
+    iface_monitor = "wlan1"  # FOR MONITOR MODE
+    
+    ntfy_ble_path  = False
+    ntfy_wifi_path = False
+    
     pct_set_unstable = 25
     pct_set_drop     = 25
 
+    wifi_client_idle    = 120
+    wifi_client_offline = 1600
 
+    wifi_hop_delay = .25
+    wifi_hops      = [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161]
+    ble_scan_duration = 5
+
+    presets = {
+        "2.4": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        "5":   [36, 40, 44, 48, 149, 153, 157, 161],
+        "all": [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161]
+    }
+
+
+ 
+    
+    # END
     lan_current = 0
     lan_max     = 0
     lan_min     = 0

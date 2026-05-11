@@ -23,7 +23,7 @@ import threading, time, sys, argparse
 
 # NSM IMPORTS
 from nsm_vars import Variables
-from nsm_tui import TUI
+from nsm_tui import TUI, CLI
 import nsm_server_mcp
 import nsm_voice_agent
 
@@ -136,7 +136,8 @@ def main():
     Variables.pct_set_drop     = args.bd
     
 
-
+    
+    CLI.main()
     TUI().run()
 
 

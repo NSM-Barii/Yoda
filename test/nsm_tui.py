@@ -10,6 +10,10 @@ from nsm_vars import Variables
 from nsm_monitor import Monitor_Runner
 
 
+# CONSTANTS
+console = Variables.console
+
+
 class TUI(App):
 
     CSS = """
@@ -55,7 +59,6 @@ class TUI(App):
     def on_mount(self):
         """This will add to said initialized TUI"""
 
-
         self.query_one("#ble",  RichLog).border_title = "Bluetooth/BLE"
         self.query_one("#wifi", RichLog).border_title = "WiFi"
 
@@ -95,6 +98,8 @@ class TUI(App):
 
     @staticmethod
     def _fmt_session(start_ts):
+        """This will be used to get time, this lowkey makes sense now that i look like it"""
+
         elapsed = int(time.time() - start_ts)
         h, rem  = divmod(elapsed, 3600)
         m, s    = divmod(rem, 60)
@@ -150,14 +155,129 @@ class TUI(App):
 
 
     def add_ap_to_tree(self, bssid, ssid, rssi):
+        """This will ad an ap to a tree"""
+
         tree   = self.query_one("#wifi_tree", Tree)
         branch = tree.root.add(f"[bold green]{ssid}[/bold green]  [dim]{bssid}[/dim]  [cyan]{rssi}dBm[/cyan]", expand=True)
         self._ap_branches[bssid] = branch
 
 
     def add_client_to_tree(self, bssid, mac, vendor):
+        """This will add clients to the tree"""
+
         if bssid not in self._ap_branches: return
         self._ap_branches[bssid].add_leaf(f"[yellow]{mac}[/yellow]  [dim]{vendor or 'Unknown'}[/dim]")
+
+
+
+class CLI():
+    """This will be used to get custom vars from user before transitioning to the TUI"""
+
+    
+    @classmethod
+    def _check_vars(cls):
+        """This will check def vars, if not true then summon assign"""
+
+        
+        # FOR NOW THIS WILL RETURN FALSE INDEFINETLY TO CONTINUE RUNNING CLI ALL THE TIME
+        return False
+
+
+        if not Variables.ntfy_ble_path: 
+            return False
+        
+        if Variables.ntfy_wifi_path:
+            return False
+    
+
+    @classmethod
+    def _set_vars(cls):
+        """This will be used to set vars via RICH cli"""
+
+
+        c1 = "bold red"
+        c2 = "bold yellow"
+        c3 = "bold green"
+        c4 = "bold blue"
+        c5 = "yellow"
+
+        p1 = "[+]"
+        p2 = "[*]"
+
+
+        iface = console.input(f"[{c5}]{p2} iface_monitor:[/{c5}] ")
+
+        wifi_hops      = console.input(f"[{c5}]{p2} wifi_hops:[/{c5}] ")
+        wifi_hop_delay = console.input(f"[{c5}]{p2} wifi_hop_delay:[/{c5}] ")
+
+        wifi_client_idle    = console.input(f"[{c5}]{p2} wifi_client_idle:[/{c5}] ")
+        wifi_client_offline = console.input(f"[{c5}]{p2} wifi_client_offline:[/{c5}] ")
+
+        pct_set_unstable = console.input(f"[{c5}]{p2} pct_set_unstable:[/{c5}] ")
+        pct_set_drop     = console.input(f"[{c5}]{p2} pct_set_drop:[/{c5}] ")
+
+        ntfy_ble_path  = console.input(f"[{c5}]{p2} ntfy_ble_path:[/{c5}] ")
+        ntfy_wifi_path = console.input(f"[{c5}]{p2} ntfy_wifi_path:[/{c5}] ")
+
+
+        if wifi_hops in Variables.presets: Variables.wifi_hops = Variables.presets[wifi_hops]
+
+
+        Variables.iface_monitor       = iface
+        Variables.wifi_hops           = wifi_hops
+        Variables.wifi_hop_delay      = wifi_hop_delay
+        Variables.ntfy_ble_path       = ntfy_ble_path
+        Variables.ntfy_wifi_path      = ntfy_wifi_path
+        Variables.wifi_client_idle    = wifi_client_idle
+        Variables.wifi_client_offline = wifi_client_offline
+        Variables.pct_set_unstable    = pct_set_unstable
+        Variables.pct_set_drop        = pct_set_drop
+
+
+
+    def _print_vars(cls):
+        """This will print out the vars vals"""
+
+
+        c1 = "bold green"
+        c2 = "bold yellow"
+        c3 = "bold red"
+        c4 = "bold blue"
+
+
+
+        stats = (
+            f"[{c1}] [+] WiFi Interface:[{c4}] {Variables.iface_monitor}"
+            #f"\n[{c1}] [+] BT Interface:[{c4}] {Variables.bface}"
+            f"\n[{c1}] [+] NTFY wifi_path:[{c4}] {Variables.ntfy_ble_path}"
+            f"\n[{c1}] [+] NTFY ble_path:[{c4}] {Variables.ntfy_wifi_path}"
+            f"\n[{c1}] [+] WiFi client_idle:[{c4}] {Variables.wifi_client_idle}"
+            f"\n[{c1}] [+] WiFi client_offline:[{c4}] {Variables.wifi_client_offline}"
+            f"\n[{c1}] [+] BLE pct_set_unstable:[{c4}] {Variables.pct_set_unstable}"
+            f"\n[{c1}] [+] BLE pct_set_drop:[{c4}] {Variables.pct_set_drop}"
+            f"\n[{c1}] [+] WiFi Hop Delay:[{c4}] {Variables.wifi_hop_delay}s"
+            f"\n[{c1}] [+] Verbose:[{c4}] {Variables.verbose}"
+        )
+
+        console.print(
+            f"\n[{c1}]=========   CONSTANTS   =========\n",
+            stats,
+            f"\n[{c1}]=================================\n"
+        )
+    
+
+
+    @classmethod
+    def main(cls):
+        """This will control cli var assignment"""
+
+
+        if cls._check_vars(): cls._set_vars()
+        cls._print_vars()
+
+
+
+
 
 
 if __name__ == "__main__":

@@ -706,13 +706,12 @@ class Background_Threads:
 
         def hopper():
 
-            delay = 0.25
-            all_hops = [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161]
+            iface    = Variables.iface_monitor
+            delay    = Variables.wifi_hop_delay
+            all_hops = Variables.wifi_hops
 
-            iface = Variables.iface_monitor
 
-
-            # TUNE HOP
+ 
             if set_channel:
                 cls.hop = False
                 time.sleep(2)
@@ -737,11 +736,11 @@ class Background_Threads:
                 except Exception as e:
                     console.print(f"[bold red]Exception Error:[bold yellow] {e}")
 
-            # AUTO HOPPING
+     
             while cls.hop:
                 for channel in all_hops:
                     try:
-                        # HOP CHANNEL
+              
                         subprocess.Popen(
                             [
                                 "sudo",
@@ -757,17 +756,13 @@ class Background_Threads:
                             stdin=subprocess.DEVNULL,
                             start_new_session=True,
                         )
-                        cls.channel = channel
-                        if verbose:
-                            console.print(
-                                f"[bold green]Hopping on Channel:[bold yellow] {channel}"
-                            )
 
-                        # DELAY
+                        cls.channel = channel
+                        if verbose: console.print( f"[bold green]Hopping on Channel:[bold yellow] {channel}")
+
                         time.sleep(delay)
 
-                    except Exception as e:
-                        console.print(f"[bold red]Exception Error:[bold yellow] {e}")
+                    except Exception as e: console.print(f"[bold red]Exception Error:[bold yellow] {e}")
 
         cls.hop = True
         threading.Thread(target=hopper, args=(), daemon=True).start()
