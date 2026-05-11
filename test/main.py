@@ -88,6 +88,7 @@ def main_no():
         print("\n[!] Shutting down YODA...")
 
 
+
 def main():
     """This will be used to start main program"""
 
@@ -113,6 +114,8 @@ def main():
     )
 
     parser.add_argument("-i",    metavar="IFACE",  help="Monitor mode interface (default: wlan1)")
+    parser.add_argument("--bu", type=int, default=25, help="BLE unstable device threshold (default: 25)")
+    parser.add_argument("--bd", type=int, default=25, help="BLE drop score threshold (default: 25)")
     parser.add_argument("-ntfy", metavar="TOPIC",  help="ntfy topic for push notifications (e.g. my-topic-123)")
     parser.add_argument("-help", action="store_true", help="Show this help message")
 
@@ -129,6 +132,9 @@ def main():
 
     Variables.iface_monitor = args.i    or "wlan1"
     Variables.ntfy_path     = args.ntfy or False
+    Variables.pct_set_unstable = args.bu
+    Variables.pct_set_drop     = args.bd
+    
 
 
     TUI().run()

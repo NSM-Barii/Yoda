@@ -80,6 +80,8 @@ class Variables():
 
 
     ntfy_path = False
+    pct_set_unstable = 25
+    pct_set_drop     = 25
 
 
     lan_current = 0

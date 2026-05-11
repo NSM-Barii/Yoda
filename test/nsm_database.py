@@ -595,15 +595,27 @@ class Notifications():
 
     
     @classmethod
-    def client_left(cls, ssid:str, vendor_ssid:str, client_mac:str, vendor_client:str, priority="max"):
+    def client_left(cls, ssid:str, vendor_ssid:str, client_mac:str, vendor_client:str, duration:str, priority="max"):
         """This will cls.push_ntfy <-- client_left"""
 
         headers = {
             "Title": f"Client left {ssid}",
             "Priority": priority,
         }
-        data = f"Client: {client_mac} - vendor_client: {vendor_client}  -->  SSID: {ssid}  Vendor_ssid: {vendor_ssid}"
+        data = f"Client: {client_mac}  Vendor: {vendor_client}  -->  {ssid}  Duration: {duration}"
 
+        cls._push_ntfy(headers=headers, data=data)
+
+
+    @classmethod
+    def client_returned(cls, ssid:str, vendor_ssid:str, client_mac:str, vendor_client:str, duration:str, priority="default"):
+        """This will cls.push_ntfy <-- client_returned"""
+
+        headers = {
+            "Title": f"Client returned to {ssid}",
+            "Priority": priority,
+        }
+        data = f"Client: {client_mac}  Vendor: {vendor_client}  -->  {ssid}  Away for: {duration}"
 
         cls._push_ntfy(headers=headers, data=data)
 
@@ -626,28 +638,28 @@ class Notifications():
 
 
     @classmethod
-    def unstable_devices_ratio(cls,  unstable_ratio:float, priority="max"):
+    def unstable_devices_pct(cls,  unstable_pct:float, title:str="Unstable BLE Devices", priority="max"):
         """This will cls.push_ntfy <-- unstable_devices"""
 
         headers = {
-            "Title": "Unstable BLE Devices",
+            "Title": title,
             "Priority": priority,
         }
-        data = f"Unstable Ratio: {unstable_ratio} \nPossible BLE/Bluetooth Jamming"
+        data = f"Unstable Ratio: {unstable_pct} \nPossible BLE/Bluetooth Jamming"
 
 
         cls._push_ntfy(headers=headers, data=data)
 
     
     @classmethod
-    def drop_score(cls, drop_score:float, priority="max"):
+    def drop_pct(cls, drop_pct:float, title:str = "Alot of BLE/Bluetooth Drop Score" , priority="max"):
         """This will cls.push_ntfy <-- drop_score"""
 
         headers = {
-            "Title": "Alot of BLE/Bluetooth Drop Score",
+            "Title": title,
             "Priority": priority,
         }
-        data = f"Drop Score: {drop_score}\nA large spike of BLE/Bluetooth devices have dropped in a short timeframe!"
+        data = f"Drop Score: {drop_pct}\nA large spike of BLE/Bluetooth devices have dropped in a short timeframe!"
 
 
         cls._push_ntfy(headers=headers, data=data)
@@ -665,7 +677,7 @@ class Notifications():
 
         try:
 
-            response = requests.post(url=url, headers=headers)
+            response = requests.post(url=url, headers=headers, data=data.encode("utf-8"))
 
             code = response.status_code
 
@@ -832,11 +844,13 @@ class Extensions():
 
     
     server_ip   = False
-    alpha       = 0.05
-    avg         = None
-    last_count  = 0
-    last_color  = False
-    drive_error = False
+    alpha             = 0.05
+    avg               = None
+    last_count        = 0
+    last_color        = False
+    drive_error       = False
+    prev_drop_pct     = 0
+    prev_unstable_pct = 0
 
 
     @classmethod
@@ -904,36 +918,56 @@ class Extensions():
         
 
     @classmethod
-    def _tts_google(cls, data=False, verbose=True):
+    def _tts_google(cls, total, unstables, count, data=False, verbose=True):
         """This will be responsible for pushing sound to --> Yoda Audio player"""
 
 
-        current_count = data[0]
-        average_ratio = data[1]
-        color         = data[2]
-        percent       = abs(average_ratio * 100)
+        unstable_ratio = unstables / total
+        drop_score     = ((cls.avg or 1) - count) / (cls.avg or 1)
 
-        valid = ["green", "yellow", "orange", "red", "purple"]
+        unstable_pct = round(unstable_ratio * 100, 2)
+        drop_pct     = round(drop_score * 100, 2)
+
+
+        pct_set_unstable = Variables.pct_set_unstable
+        pct_set_drop     = Variables.pct_set_drop
+
+
+        if unstable_pct > cls.prev_unstable_pct and unstable_pct > pct_set_unstable:
+            msg = f"[bold red][!] Unstable ratio rising:[/bold red] {unstable_pct}%   unstables: {unstables}/{total}"
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+            Notifications.unstable_devices_pct(unstable_pct=unstable_pct)
+
+        elif unstable_pct < cls.prev_unstable_pct and unstable_pct < pct_set_unstable / 2:
+            msg = f"[bold green][+] Unstable ratio recovering:[/bold green] {unstable_pct}%   {cls.last_count} -> {count}"
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+            Notifications.unstable_devices_pct(unstable_pct=unstable_pct, title="BLE drop score decreasing")
+
+        if drop_pct > cls.prev_drop_pct and drop_pct > pct_set_drop:
+            msg = f"[bold red][!] BLE drop score rising:[/bold red] {drop_pct}%   {cls.last_count} -> {count}"
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+            Notifications.drop_pct(drop_pct=drop_pct)
+
+        elif drop_pct < cls.prev_drop_pct and drop_pct < pct_set_drop / 2:
+            msg = f"[bold green][+] BLE drop score recovering:[/bold green] {drop_pct}%   {cls.last_count} -> {count}"
+            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+            Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score decreasing")
         
-        if cls.last_count < current_count:
-            say = f"[bold green][UP] Device surge detected:[/bold green] {cls.last_count} → {current_count} (+{percent}%)"
 
-        elif cls.last_count > current_count:
-            say = f"[bold red][DOWN] Device drop detected:[/bold red] {cls.last_count} → {current_count} (-{percent}%)"
+        cls.prev_drop_pct     = drop_pct
+        cls.prev_unstable_pct = unstable_pct
 
 
-        else: return
 
+        #if color in valid and cls.last_count != current_count:
 
-        if color in valid and cls.last_count != current_count:
-
-            if verbose: console.print(say)
+            #if verbose: console.print(say)
             #console.print(f"{cls.last_color} --> {color}")
             #console.print(f"{cls.last_count} --> {current_count}")
 
         
     @classmethod
-    def Controller(cls, current_count: int, server_ip: str):
+    def Controller(cls, current_count: int, server_ip: str, total:int, unstables:int):
         """This one method will be responbile for calling and handling all methods within this class <--"""
 
         
@@ -941,7 +975,11 @@ class Extensions():
         average = cls._average_ratio(current_count=current_count)
         data    = cls._change_color(current_count=current_count, average_ratio=average, server_ip=server_ip)
 
-        cls._tts_google(data=data)
+
+        # MOVED FROM nsm_monitor.Monitor_Bluetooth()
+
+
+        cls._tts_google(data=data, total=total, unstables=unstables, count=current_count)
 
         cls.last_count = data[0]
         cls.last_color = data[2]
