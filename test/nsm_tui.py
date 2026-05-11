@@ -225,8 +225,8 @@ class CLI():
             f"\n[{c1}] [+] WiFi client_offline:[{c4}] {Variables.wifi_client_offline}"
             f"\n[{c1}] [+] BLE pct_set_unstable:[{c4}] {Variables.pct_set_unstable}"
             f"\n[{c1}] [+] BLE pct_set_drop:[{c4}] {Variables.pct_set_drop}"
-            f"\n[{c1}] [+] WiFi Hops:[{c4}] {Variables.wifi_hops}s"
-            f"\n[{c1}] [+] WiFi Hop Delay:[{c4}] {Variables.wifi_hop_delay}s"
+            f"\n[{c1}] [+] WiFi Hops:[{c4}] {Variables.wifi_hops}"
+            f"\n[{c1}] [+] WiFi Hop Delay:[{c4}] {Variables.wifi_hop_delay}"
             f"\n[{c1}] [+] Verbose:[{c4}] {Variables.verbose}"
         )
 
