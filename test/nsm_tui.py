@@ -179,8 +179,8 @@ class CLI():
         """This will check def vars, if not true then summon assign"""
 
         
-        # FOR NOW THIS WILL RETURN FALSE INDEFINETLY TO CONTINUE RUNNING CLI ALL THE TIME
-        return False
+        # FOR NOW THIS WILL RETURN TRUE INDEFINETLY TO CONTINUE RUNNING CLI ALL THE TIME
+        return True
 
 
         if not Variables.ntfy_ble_path: 
@@ -234,7 +234,7 @@ class CLI():
         Variables.pct_set_drop        = pct_set_drop
 
 
-
+    @classmethod
     def _print_vars(cls):
         """This will print out the vars vals"""
 
