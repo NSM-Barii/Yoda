@@ -225,6 +225,7 @@ class CLI():
             f"\n[{c1}] [+] WiFi client_offline:[{c4}] {Variables.wifi_client_offline}"
             f"\n[{c1}] [+] BLE pct_set_unstable:[{c4}] {Variables.pct_set_unstable}"
             f"\n[{c1}] [+] BLE pct_set_drop:[{c4}] {Variables.pct_set_drop}"
+            f"\n[{c1}] [+] WiFi Hops:[{c4}] {Variables.wifi_hops}s"
             f"\n[{c1}] [+] WiFi Hop Delay:[{c4}] {Variables.wifi_hop_delay}s"
             f"\n[{c1}] [+] Verbose:[{c4}] {Variables.verbose}"
         )
@@ -254,7 +255,7 @@ class CLI():
         p2 = "[*]"
 
         
-        console.print("=" * 20) 
+        console.print("[bold purple]=" * 40) 
         iface = console.input(f"[{c5}]{p2} iface_monitor:[/{c5}] ")
 
         wifi_hops      = console.input(f"[{c5}]{p2} wifi_hops:[/{c5}] ")
@@ -268,7 +269,7 @@ class CLI():
 
         ntfy_ble_path  = console.input(f"[{c5}]{p2} ntfy_ble_path:[/{c5}] ")
         ntfy_wifi_path = console.input(f"[{c5}]{p2} ntfy_wifi_path:[/{c5}] ")
-        console.print("=" * 20) 
+        console.print("[bold purple]=" * 40) 
 
 
         if wifi_hops in Variables.presets: Variables.wifi_hops = Variables.presets[wifi_hops]
@@ -298,7 +299,7 @@ class CLI():
 
 
         stats = (
-            f"[{c1}] [+] WiFi Interface:[{c4}] {Variables.iface_monitor}"
+            f"[{c1}][+] WiFi Interface:[{c4}] {Variables.iface_monitor}"
             #f"\n[{c1}] [+] BT Interface:[{c4}] {Variables.bface}"
             f"\n[{c1}] [+] NTFY wifi_path:[{c4}] {Variables.ntfy_ble_path}"
             f"\n[{c1}] [+] NTFY ble_path:[{c4}] {Variables.ntfy_wifi_path}"
@@ -306,6 +307,7 @@ class CLI():
             f"\n[{c1}] [+] WiFi client_offline:[{c4}] {Variables.wifi_client_offline}"
             f"\n[{c1}] [+] BLE pct_set_unstable:[{c4}] {Variables.pct_set_unstable}"
             f"\n[{c1}] [+] BLE pct_set_drop:[{c4}] {Variables.pct_set_drop}"
+            f"\n[{c1}] [+] WiFi Hop:[{c4}] {Variables.wifi_hops}s"
             f"\n[{c1}] [+] WiFi Hop Delay:[{c4}] {Variables.wifi_hop_delay}s"
             f"\n[{c1}] [+] Verbose:[{c4}] {Variables.verbose}"
         )
@@ -327,7 +329,7 @@ class CLI():
         cls._print_vars()
         
         time.sleep(2)
-        console.input(f"\n\n[bold red][!] Press Enter to Acknowledge your Vars!")
+        console.input(f"\n\n[yellow][!] Press Enter to Acknowledge your Vars! ")
 
 
 
