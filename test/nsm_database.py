@@ -566,6 +566,12 @@ class Notifications():
     """This will be used to notify user of events happening"""
 
 
+    u_devices = set()
+
+    
+    # =======
+    #  WiFi
+    # =======
     @classmethod
     def new_ap(cls, ssid:str, bssid:str, channel:int, vendor:str, priority="max"):
         """This will cls.push_ntfy <-- new_ap"""
@@ -577,7 +583,7 @@ class Notifications():
         data = f"SSID: {ssid}  BSSID: {bssid}  Ch: {channel}  Vendor: {vendor}"
 
 
-        cls._push_ntfy(headers=headers, data=data)
+        cls._push_ntfy(headers=headers, data=data, type="wifi")
 
     
     @classmethod
@@ -591,7 +597,7 @@ class Notifications():
         data = f"Client: {client_mac} - vendor_client: {vendor_client}  -->  SSID: {ssid}  Vendor_ssid: {vendor_ssid}"
 
 
-        cls._push_ntfy(headers=headers, data=data)
+        cls._push_ntfy(headers=headers, data=data, type="wifi")
 
     
     @classmethod
@@ -604,7 +610,7 @@ class Notifications():
         }
         data = f"Client: {client_mac}  Vendor: {vendor_client}  -->  {ssid}  Duration: {duration}"
 
-        cls._push_ntfy(headers=headers, data=data)
+        cls._push_ntfy(headers=headers, data=data, type="wifi")
 
 
     @classmethod
@@ -617,61 +623,98 @@ class Notifications():
         }
         data = f"Client: {client_mac}  Vendor: {vendor_client}  -->  {ssid}  Away for: {duration}"
 
-        cls._push_ntfy(headers=headers, data=data)
+        cls._push_ntfy(headers=headers, data=data, type="wifi")
 
-    
-    
+
+    # ======
+    #  BLE
+    # =====
     @classmethod
-    def unstable_device(cls, mac:str, vendor:str, title:str, priority="max"):
+    def device_count(cls, device_count:int, title:str, priority=5):
+        """This will be used to update user on max/min device count"""
+
+
+        headers = {
+            "Title": f"{title}",
+            "Priority": priority,
+        }
+        data = f"{device_count} devices"
+
+        cls._push_ntfy(headers=headers, data=data, type="ble")
+
+
+    @classmethod
+    def push_ble_device(cls, mac:str, vendor:str, title:str, priority="max"):
         """This will cls.push_ntfy <-- unstable_device"""
 
         headers = {
             "Title": f"{title}",
             "Priority": priority,
         }
-        data = f"Unstable Device: {mac}  Vendor: {vendor}"
+        data = f"Local_name: {title}  mac: {mac}  Vendor: {vendor}"
 
 
-        cls._push_ntfy(headers=headers, data=data)
+        cls._push_ntfy(headers=headers, data=data, type="ble")
     
 
+    @classmethod
+    def device_state(cls, mac:str, vendor:str, title:str, priority="max"):
+        """This will cls.push_ntfy <-- unstable_device"""
 
+
+        if mac not in cls.u_devices and title == "Unstable BLE Device" or title == "BLE Device now Stable":
+            
+            if mac in cls.u_devices: cls.u_devices.pop(mac)
+
+            cls.u_devices.add(mac)
+
+            headers = {
+                "Title": f"{title}",
+                "Priority": priority,
+            }
+            data = f"mac: {mac}  -  Vendor: {vendor}"
+
+
+            cls._push_ntfy(headers=headers, data=data, type="ble")
+        
+        return False
+        
 
     @classmethod
-    def unstable_devices_pct(cls,  unstable_pct:float, title:str="Unstable BLE Devices", priority="max"):
+    def unstable_devices_pct(cls,  unstable_pct:float, title:str="Unstable BLE Devices", cause="Possible BLE/Bluetooth Jamming", priority="max"):
         """This will cls.push_ntfy <-- unstable_devices"""
 
         headers = {
             "Title": title,
             "Priority": priority,
         }
-        data = f"Unstable Ratio: {unstable_pct} \nPossible BLE/Bluetooth Jamming"
+        data = f"Unstable Percentage: {unstable_pct}% \n{cause}"
 
 
-        cls._push_ntfy(headers=headers, data=data)
+        cls._push_ntfy(headers=headers, data=data, type="ble")
 
     
     @classmethod
-    def drop_pct(cls, drop_pct:float, title:str = "Alot of BLE/Bluetooth Drop Score" , priority="max"):
+    def drop_pct(cls, drop_pct:float, title:str = "Alot of BLE/Bluetooth Drop Score", cause="A large spike of BLE/Bluetooth devices have dropped in a short timeframe!", priority="max"):
         """This will cls.push_ntfy <-- drop_score"""
 
         headers = {
             "Title": title,
             "Priority": priority,
         }
-        data = f"Drop Score: {drop_pct}\nA large spike of BLE/Bluetooth devices have dropped in a short timeframe!"
+        data = f"Drop Percentage: {drop_pct}%\n{cause}"
 
-
-        cls._push_ntfy(headers=headers, data=data)
+        cls._push_ntfy(headers=headers, data=data, type="ble")
 
 
     @classmethod
-    def _push_ntfy(cls, headers, data):
+    def _push_ntfy(cls, headers, data, type=["ble", "wifi"]):
         """This will be used to push notifications to a server to view via (mainly) phone"""
         
-
-        ntfy_path = Variables.ntfy_path
-        if not ntfy_path: return False
+        
+        if type   == "wifi": ntfy_path = Variables.ntfy_wifi_path
+        elif type == "ble":  ntfy_path = Variables.ntfy_ble_path 
+        else: return False
 
         url = f"https://ntfy.sh/{ntfy_path}"
 
@@ -680,6 +723,13 @@ class Notifications():
             response = requests.post(url=url, headers=headers, data=data.encode("utf-8"))
 
             code = response.status_code
+            
+            """
+            For rate limiting:
+            code":42908
+            error":"limit reached: daily message quota reached; increase your limits with a paid plan
+            
+            """
 
             if code in [200, 204]: console.print(f"[bold green][+] NTFY Notification successfully pushed!")
             else:                  console.print(f"[bold red][-] NTFY Notification Failed to push!")
@@ -846,6 +896,8 @@ class Extensions():
     drive_error       = False
     prev_drop_pct     = 0
     prev_unstable_pct = 0
+    good_drop         = True
+    good_unstable     = True
 
 
     @classmethod
@@ -927,26 +979,57 @@ class Extensions():
         pct_set_unstable = Variables.pct_set_unstable
         pct_set_drop     = Variables.pct_set_drop
 
+        msg = "called extensions"
+        Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+
+
 
         if unstable_pct > cls.prev_unstable_pct and unstable_pct > pct_set_unstable:
-            msg = f"[bold red][!] Unstable ratio rising:[/bold red] {unstable_pct}%   unstables: {unstables}/{total}"
+
+            msg = "called pct"
             Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
-            Notifications.unstable_devices_pct(unstable_pct=unstable_pct)
+
+
+            if cls.good_unstable:
+                msg = f"[bold red][!] Unstable ratio rising:[/bold red] {unstable_pct}%   unstables: {unstables}/{total}"
+                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+
+                Notifications.unstable_devices_pct(unstable_pct=unstable_pct, title="BLE Unstable score rising", cause=f"Unstable Devices: {unstables}/{total}")
+                cls.good_unstable = False
 
         elif unstable_pct < cls.prev_unstable_pct and unstable_pct < pct_set_unstable / 2:
-            msg = f"[bold green][+] Unstable ratio recovering:[/bold green] {unstable_pct}%   {cls.last_count} -> {count}"
-            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
-            Notifications.unstable_devices_pct(unstable_pct=unstable_pct, title="BLE drop score decreasing")
+            
+            if not cls.good_unstable:
+                msg = f"[bold green][+] Unstable ratio recovering:[/bold green] {unstable_pct}%   {cls.last_count} -> {count}" # unstables: {unstables}/{total}"
+                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+
+                Notifications.unstable_devices_pct(unstable_pct=unstable_pct, title="BLE Unstable score recovering", cause=f"Unstable Devices: {unstables}/{total}")
+                cls.good_unstable = True
+
 
         if drop_pct > cls.prev_drop_pct and drop_pct > pct_set_drop:
-            msg = f"[bold red][!] BLE drop score rising:[/bold red] {drop_pct}%   {cls.last_count} -> {count}"
+
+            msg = "called drop"
             Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
-            Notifications.drop_pct(drop_pct=drop_pct)
+
+           
+            if cls.good_drop:
+                msg = f"[bold red][!] BLE drop score rising:[/bold red] {drop_pct}%   {cls.last_count} -> {count}"
+                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+
+                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score rising", cause=f"Dropped Devices: {cls.last_count - count}{cls.last_count}\nA large spike of BLE/Bluetooth devices have dropped in a short timeframe!")
+                cls.good_drop = False
+
 
         elif drop_pct < cls.prev_drop_pct and drop_pct < pct_set_drop / 2:
-            msg = f"[bold green][+] BLE drop score recovering:[/bold green] {drop_pct}%   {cls.last_count} -> {count}"
-            Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
-            Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score decreasing")
+
+            if not cls.good_drop: 
+                msg = f"[bold green][+] BLE drop score recovering:[/bold green] {drop_pct}%   {cls.last_count} -> {count}"
+                Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
+
+                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score recovering", cause=f"Dropped Devices: {cls.last_count} -> {count}")
+                cls.good_drop = True
+
         
 
         cls.prev_drop_pct     = drop_pct

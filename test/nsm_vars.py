@@ -82,14 +82,14 @@ class Variables():
     # MONITORING VARS
     iface_monitor = "wlan1"  # FOR MONITOR MODE
     
-    ntfy_ble_path  = False
+    ntfy_ble_path  = "nsm-test-123"
     ntfy_wifi_path = False
     
     pct_set_unstable = 25
     pct_set_drop     = 25
 
     wifi_client_idle    = 120
-    wifi_client_offline = 6000
+    wifi_client_offline = 600
 
     wifi_hop_delay = .25
     wifi_hops      = [1, 6, 11, 36, 40, 44, 48, 149, 153, 157, 161]

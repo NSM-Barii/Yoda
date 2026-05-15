@@ -8,7 +8,7 @@ from textual.containers import Horizontal
 
 
 # ETC IMPORTS
-import time, pyfiglet
+import time, pyfiglet, subprocess, os
 from datetime import datetime
 
 # NSM IMPORTS
@@ -141,6 +141,7 @@ class TUI(App):
         color = "green" if status == "online" else "dim"
 
         if bssid in self._ap_rows:
+            #bssid = "obfuscated"
             key     = self._ap_rows[bssid]
             session = self._fmt_session(self._ap_first_ts[bssid])
             try: table.update_cell(key, self._ck_ap_rssi,    str(rssi))
@@ -162,7 +163,8 @@ class TUI(App):
 
     def add_ap_to_tree(self, bssid, ssid, rssi):
         """This will ad an ap to a tree"""
-
+        
+        #bssid = "obfuscated"
         tree   = self.query_one("#wifi_tree", Tree)
         branch = tree.root.add(f"[bold green]{ssid}[/bold green]  [dim]{bssid}[/dim]  [cyan]{rssi}dBm[/cyan]", expand=True)
         self._ap_branches[bssid] = branch
@@ -170,7 +172,8 @@ class TUI(App):
 
     def add_client_to_tree(self, bssid, mac, vendor):
         """This will add clients to the tree"""
-
+        
+        #mac = "obfuscated"
         if bssid not in self._ap_branches: return
         self._ap_branches[bssid].add_leaf(f"[yellow]{mac}[/yellow]  [dim]{vendor or 'Unknown'}[/dim]")
 
@@ -180,13 +183,35 @@ class CLI():
     """This will be used to get custom vars from user before transitioning to the TUI"""
 
 
+
+    @classmethod
+    def _clear_screen(cls):
+        """This is soley used to clear the screen and make a nice sexy terminal"""
+
+
+        try:
+
+
+            if   os.name == "nt":    subprocess.run("cls")
+            elif os.name == "posix": subprocess.run("clear")
+        
+        except Exception as e: console.print(f"[bold red][-] Exception Error:[bold yellow] {e}")
+
+
     @classmethod
     def _print_welcome(cls):
         """This will be used to print Yoda"""
-
-
-        text = pyfiglet.figlet_format(text="Yoda", font="bloody")
-        console.print(text, "\nWireless reconnesiance framework for spectrum spying")
+        
+        l = "=" * 50
+        text = (
+            f"[brown]{l}"
+            "[]\nWireless reconnesiance framework for spectrum spying"
+            f"[brown]\n {l}"
+        )
+        art = pyfiglet.figlet_format(text="Yoda", font="dos_rebel")
+        console.print(f"\n{art}", style="bold green")
+        console.print(text)
+        print("\n\n")
 
 
     
@@ -217,7 +242,7 @@ class CLI():
 
 
         stats = (
-            f"[{c1}] [+] WiFi Interface:[{c4}] {Variables.iface_monitor}"
+            f"[{c1}][+] WiFi Interface:[{c4}] {Variables.iface_monitor}"
             #f"\n[{c1}] [+] BT Interface:[{c4}] {Variables.bface}"
             f"\n[{c1}] [+] NTFY wifi_path:[{c4}] {Variables.ntfy_ble_path}"
             f"\n[{c1}] [+] NTFY ble_path:[{c4}] {Variables.ntfy_wifi_path}"
@@ -230,14 +255,14 @@ class CLI():
             f"\n[{c1}] [+] Verbose:[{c4}] {Variables.verbose}"
         )
 
-        console.print(f"[bold green][+] Default Variables below!!!")
+        #console.print(f"[bold green][+] Default Variables below!!!")
         console.print(
             f"\n[{c1}]=========   Default Variables   =========\n",
             stats,
-            f"\n[{c1}]=================================\n"
+            f"\n[{c1}]=========================================\n\n"
         )
-        console.print(f"\n[bold red][!] Keeping tapping enter if you dont know what values to input, or read the README.md you skidd!!!\n\n")
-        time.sleep(2)
+        #console.print(f"\n[bold red][!] Keeping tapping enter if you dont know what values to input, or read the README.md you skidd!!!\n\n")
+
 
 
     @classmethod
@@ -255,24 +280,26 @@ class CLI():
         p2 = "[*]"
 
         
-        console.print("[bold purple]=" * 40) 
-        iface = console.input(f"[{c5}]{p2} iface_monitor:[/{c5}] ")
+        #console.print("[bold purple]=" * 40) 
+        iface = console.input(f"[{c5}]{p2} iface_monitor:[/{c5}] ")                     or Variables.iface_monitor
 
-        wifi_hops      = console.input(f"[{c5}]{p2} wifi_hops:[/{c5}] ")
-        wifi_hop_delay = console.input(f"[{c5}]{p2} wifi_hop_delay:[/{c5}] ")
+        wifi_hops      = console.input(f"[{c5}]{p2} wifi_hops:[/{c5}] ")                #or Variables.wifi_hops
+        wifi_hop_delay = console.input(f"[{c5}]{p2} wifi_hop_delay:[/{c5}] ")           or Variables.wifi_hop_delay
+ 
+        wifi_client_idle    = console.input(f"[{c5}]{p2} wifi_client_idle:[/{c5}] ")    or Variables.wifi_client_idle
+        wifi_client_offline = console.input(f"[{c5}]{p2} wifi_client_offline:[/{c5}] ") or Variables.wifi_client_offline
 
-        wifi_client_idle    = console.input(f"[{c5}]{p2} wifi_client_idle:[/{c5}] ")
-        wifi_client_offline = console.input(f"[{c5}]{p2} wifi_client_offline:[/{c5}] ")
+        pct_set_unstable = console.input(f"[{c5}]{p2} pct_set_unstable:[/{c5}] ")       or Variables.pct_set_unstable
+        pct_set_drop     = console.input(f"[{c5}]{p2} pct_set_drop:[/{c5}] ")           or Variables.pct_set_drop
 
-        pct_set_unstable = console.input(f"[{c5}]{p2} pct_set_unstable:[/{c5}] ")
-        pct_set_drop     = console.input(f"[{c5}]{p2} pct_set_drop:[/{c5}] ")
+        ntfy_ble_path  = console.input(f"[{c5}]{p2} ntfy_ble_path:[/{c5}] ")            or Variables.ntfy_ble_path
+        ntfy_wifi_path = console.input(f"[{c5}]{p2} ntfy_wifi_path:[/{c5}] ")           or Variables.ntfy_wifi_path
+        verbose = console.input(f"[{c5}]{p2} verbose:[/{c5}] ")                         or Variables.verbose
+        #console.print("[bold purple]=" * 40) 
 
-        ntfy_ble_path  = console.input(f"[{c5}]{p2} ntfy_ble_path:[/{c5}] ")
-        ntfy_wifi_path = console.input(f"[{c5}]{p2} ntfy_wifi_path:[/{c5}] ")
-        console.print("[bold purple]=" * 40) 
-
-
-        if wifi_hops in Variables.presets: Variables.wifi_hops = Variables.presets[wifi_hops]
+        
+        if not wifi_hops: wifi_hops = Variables.wifi_hops
+        elif wifi_hops in Variables.presets: Variables.wifi_hops = Variables.presets[wifi_hops]
 
 
         Variables.iface_monitor       = iface
@@ -284,7 +311,7 @@ class CLI():
         Variables.wifi_client_offline = wifi_client_offline
         Variables.pct_set_unstable    = pct_set_unstable
         Variables.pct_set_drop        = pct_set_drop
-
+        Variables.verbose             = True if verbose else False
 
     @classmethod
     def _print_vars(cls):
@@ -301,19 +328,19 @@ class CLI():
         stats = (
             f"[{c1}][+] WiFi Interface:[{c4}] {Variables.iface_monitor}"
             #f"\n[{c1}] [+] BT Interface:[{c4}] {Variables.bface}"
-            f"\n[{c1}] [+] NTFY wifi_path:[{c4}] {Variables.ntfy_ble_path}"
-            f"\n[{c1}] [+] NTFY ble_path:[{c4}] {Variables.ntfy_wifi_path}"
+            f"\n[{c1}] [+] NTFY wifi_path:[{c4}] {Variables.ntfy_wifi_path}"
+            f"\n[{c1}] [+] NTFY ble_path:[{c4}] {Variables.ntfy_ble_path}"
             f"\n[{c1}] [+] WiFi client_idle:[{c4}] {Variables.wifi_client_idle}"
             f"\n[{c1}] [+] WiFi client_offline:[{c4}] {Variables.wifi_client_offline}"
             f"\n[{c1}] [+] BLE pct_set_unstable:[{c4}] {Variables.pct_set_unstable}"
             f"\n[{c1}] [+] BLE pct_set_drop:[{c4}] {Variables.pct_set_drop}"
-            f"\n[{c1}] [+] WiFi Hop:[{c4}] {Variables.wifi_hops}s"
+            f"\n[{c1}] [+] WiFi Hops:[{c4}] {Variables.wifi_hops}"
             f"\n[{c1}] [+] WiFi Hop Delay:[{c4}] {Variables.wifi_hop_delay}s"
             f"\n[{c1}] [+] Verbose:[{c4}] {Variables.verbose}"
         )
 
         console.print(
-            f"\n[{c1}]=========   CONSTANTS   =========\n",
+            f"\n\n[{c1}]=========   CONSTANTS   =========\n",
             stats,
             f"\n[{c1}]=================================\n"
         )
@@ -323,12 +350,13 @@ class CLI():
     def main(cls):
         """This will control cli var assignment"""
   
-   
+        
+        cls._clear_screen()
+        cls._print_welcome()
         cls._default_vars()
         if cls._check_vars(): cls._set_vars()
         cls._print_vars()
         
-        time.sleep(2)
         console.input(f"\n\n[yellow][!] Press Enter to Acknowledge your Vars! ")
 
 

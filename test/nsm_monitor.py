@@ -141,6 +141,9 @@ class Monitor_Bluetooth():
                                 "last_seen": now
                             }
 
+
+                            if Variables.verbose: Notifications.push_ble_device(mac=mac, vendor=vendor, title=f"{name or "no local name"}")
+
                             cls.devices += 1
                             DeviceLog.log_ble(mac, name, vendor, manuf)
                             data = f"[bold blue]{cls.devices}[/bold blue]  [cyan]{mac}[/cyan]  [bold white]{name}[/bold white]  [dim]{vendor }[/dim]  [dim]rssi:[/dim][bold magenta]{rssi}[/bold magenta]"
@@ -197,7 +200,8 @@ class Monitor_Bluetooth():
                             vendor = dev["data"].get("vendor") or "Unknown"
                             Variables.push_event(f"Alert. Unstable BLE device detected. {vendor}")
 
-                            Notifications.unstable_device(mac=mac, vendor=vendor, title="Unstable BLE Device")
+                            if not Extensions.good_drop or not Extensions.good_unstable: 
+                                Notifications.device_state(mac=mac, vendor=vendor, title="Unstable BLE Device")
 
                     else:
                         if (dev["status"] == "unstable"):
@@ -211,8 +215,10 @@ class Monitor_Bluetooth():
 
                                 vendor = DataBase.Bluetooth.get_vendor_main(mac=mac)
                                 Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
+                                
 
-                                Notifications.unstable_device(mac=mac, vendor=vendor, title="Device now Stable") 
+                                #if not Extensions.good_drop or not Extensions.good_unstable:
+                                Notifications.device_state(mac=mac, vendor=vendor, title="BLE Device now Stable") 
 
 
                     """
@@ -252,11 +258,16 @@ class Monitor_Bluetooth():
                     Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                     Variables.push_event(f"New maximum. {total} Bluetooth devices detected")
 
+                    Notifications.device_count(device_count=total, title="New BLE Max")
+
+
                 if total < Variables.ble_min:
                     Variables.ble_min = total
                     data = (f"[bold red][!] New BLE min:[/bold red] {total} devices")
                     Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                     Variables.push_event(f"Alert. Device count dropped to {total} Bluetooth devices")
+
+                    Notifications.device_count(device_count=total, title="New BLE Min")
 
                 wifi_aps    = len(Variables.live_map_wifi)
                 wifi_clients = sum(len(d["clients"]) for d in Variables.live_map_wifi.values() if "clients" in d)
@@ -323,6 +334,8 @@ class Monitor_WiFi():
             "-e", "wlan.fc.type_subtype",
         ]
 
+        num = 0
+
         process = subprocess.Popen(
             cmd, 
             stdout=subprocess.PIPE, 
@@ -355,6 +368,8 @@ class Monitor_WiFi():
                         try:    ssid = bytes.fromhex(raw).decode("utf-8", errors="ignore")
                         except: ssid = raw
                     else: ssid = "Hidden"
+
+                    #ssid = f"obfuscated_{num}"; num += 1
 
                     if src not in cls.live_map:
 
