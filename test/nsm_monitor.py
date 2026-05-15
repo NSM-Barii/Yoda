@@ -90,7 +90,7 @@ class Monitor_Bluetooth():
         try:
 
             scanner    = BleakScanner()
-            first      = 15
+            first      = 5
             start_time = time.time()
 
             #with Live(panel, console=console, refresh_per_second=4):

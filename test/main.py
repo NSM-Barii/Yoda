@@ -129,17 +129,11 @@ def main():
         parser.print_help()
         return False
 
-
-
-    Variables.iface_monitor    = args.i    or "wlan1"
-    Variables.ntfy_path        = args.ntfy or False
-    Variables.pct_set_unstable = args.bu
-    Variables.pct_set_drop     = args.bd
-
-    if args.i: Background_Threads.set_monitor_mode(args.i)
-
     CLI.main()
+    Background_Threads.set_monitor_mode(iface=Variables.iface_monitor)
     TUI().run()
+
+
 
 
 

@@ -823,7 +823,9 @@ class Background_Threads:
     @staticmethod
     def set_monitor_mode(iface):
         """Put iface into monitor mode"""
-        subprocess.run(f"sudo ip link set {iface} down; sudo iw dev {iface} set type monitor; sudo ip link set {iface} up", shell=True)
+
+        if Variables.iface_monitor:
+            subprocess.run(f"sudo ip link set {iface} down; sudo iw dev {iface} set type monitor; sudo ip link set {iface} up", shell=True)
 
     @staticmethod
     def change_iface_mode(iface, mode=["managed", "monitor"], verbose=True):
