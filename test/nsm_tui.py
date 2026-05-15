@@ -192,8 +192,8 @@ class CLI():
         try:
 
 
-            if   os.name == "nt":    subprocess.run("cls")
-            elif os.name == "posix": subprocess.run("clear")
+            if   os.name == "nt":    subprocess.run("cls",   shell=True)
+            elif os.name == "posix": subprocess.run("clear", shell=True)
         
         except Exception as e: console.print(f"[bold red][-] Exception Error:[bold yellow] {e}")
 
@@ -204,9 +204,9 @@ class CLI():
         
         l = "=" * 50
         text = (
-            f"[brown]{l}"
-            "[]\nWireless reconnesiance framework for spectrum spying"
-            f"[brown]\n {l}"
+            f"[yellow]{l}[/yellow]"
+            "\n[dim]Passive RF monitoring  •  BLE  •  WiFi  •  Spectrum[/dim]"
+            f"\n[yellow]{l}[/yellow]"
         )
         art = pyfiglet.figlet_format(text="Yoda", font="dos_rebel")
         console.print(f"\n{art}", style="bold green")

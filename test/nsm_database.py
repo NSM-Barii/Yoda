@@ -570,6 +570,22 @@ class Notifications():
 
     
     # =======
+    #  BLE
+    # =======
+    @classmethod
+    def push_ble_device(cls, mac:str, vendor:str, title:str, priority="low"):
+        """Notify on new BLE device — only fires when verbose is on"""
+
+        headers = {
+            "Title": title,
+            "Priority": priority,
+        }
+        data = f"New BLE Device: {mac}  Vendor: {vendor or 'Unknown'}"
+
+        cls._push_ntfy(headers=headers, data=data)
+
+
+    # =======
     #  WiFi
     # =======
     @classmethod
@@ -630,7 +646,7 @@ class Notifications():
     #  BLE
     # =====
     @classmethod
-    def device_count(cls, device_count:int, title:str, priority=5):
+    def device_count(cls, device_count:int, title:str, priority="max"):
         """This will be used to update user on max/min device count"""
 
 
@@ -662,9 +678,9 @@ class Notifications():
         """This will cls.push_ntfy <-- unstable_device"""
 
 
-        if mac not in cls.u_devices and title == "Unstable BLE Device" or title == "BLE Device now Stable":
-            
-            if mac in cls.u_devices: cls.u_devices.pop(mac)
+        if (mac not in cls.u_devices and title == "Unstable BLE Device") or (mac in cls.u_devices and title == "BLE Device now Stable"):
+
+            if mac in cls.u_devices: cls.u_devices.discard(mac)
 
             cls.u_devices.add(mac)
 
@@ -906,7 +922,9 @@ class Extensions():
 
 
         if cls.avg is None: cls.avg = float(current_count); return 0.0
-        cls.avg = (cls.avg * (1 - cls.alpha)) + (current_count * cls.alpha)
+
+        alpha = 0.01 if current_count < cls.avg else cls.alpha
+        cls.avg = (cls.avg * (1 - alpha)) + (current_count * alpha)
 
         if cls.avg == 0: return 0.0
         score = (current_count - cls.avg) / cls.avg
@@ -1016,8 +1034,9 @@ class Extensions():
             if cls.good_drop:
                 msg = f"[bold red][!] BLE drop score rising:[/bold red] {drop_pct}%   {cls.last_count} -> {count}"
                 Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
-
-                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score rising", cause=f"Dropped Devices: {cls.last_count - count}{cls.last_count}\nA large spike of BLE/Bluetooth devices have dropped in a short timeframe!")
+                
+                n = cls.last_count =- count
+                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score rising", cause=f"Dropped Devices: {n} -> {count}\nA large spike of BLE/Bluetooth devices have dropped in a short timeframe!")
                 cls.good_drop = False
 
 

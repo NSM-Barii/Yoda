@@ -152,7 +152,7 @@ class Monitor_Bluetooth():
                     
                         
 
-                        cls.live_map[mac]["rssi_list"].append(rssi)
+                        cls.live_map[mac]["rssi_list"] = (cls.live_map[mac]["rssi_list"] + [rssi])[-10:]
                         cls.live_map[mac]["seen_cycles"] += 1
                         cls.live_map[mac]["last_seen"]   = now
                         cls.live_map[mac]["cycle"]       = cycle
@@ -217,8 +217,8 @@ class Monitor_Bluetooth():
                                 Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                                 
 
-                                #if not Extensions.good_drop or not Extensions.good_unstable:
-                                Notifications.device_state(mac=mac, vendor=vendor, title="BLE Device now Stable") 
+                                if not Extensions.good_drop or not Extensions.good_unstable:
+                                    Notifications.device_state(mac=mac, vendor=vendor, title="BLE Device now Stable")
 
 
                     """
