@@ -235,33 +235,25 @@ class CLI():
     def _default_vars(cls):
         """This will print the default vars as the user can just keep tapping enter"""
 
-        c1 = "bold green"
-        c2 = "bold yellow"
-        c3 = "bold red"
-        c4 = "bold blue"
-
+        c1 = "dim white"
+        c4 = "cyan"
 
         stats = (
-            f"[{c1}][+] WiFi Interface:[{c4}] {Variables.iface_monitor}"
-            #f"\n[{c1}] [+] BT Interface:[{c4}] {Variables.bface}"
-            f"\n[{c1}] [+] NTFY wifi_path:[{c4}] {Variables.ntfy_ble_path}"
-            f"\n[{c1}] [+] NTFY ble_path:[{c4}] {Variables.ntfy_wifi_path}"
-            f"\n[{c1}] [+] WiFi client_idle:[{c4}] {Variables.wifi_client_idle}"
-            f"\n[{c1}] [+] WiFi client_offline:[{c4}] {Variables.wifi_client_offline}"
-            f"\n[{c1}] [+] BLE pct_set_unstable:[{c4}] {Variables.pct_set_unstable}"
-            f"\n[{c1}] [+] BLE pct_set_drop:[{c4}] {Variables.pct_set_drop}"
-            f"\n[{c1}] [+] WiFi Hops:[{c4}] {Variables.wifi_hops}"
-            f"\n[{c1}] [+] WiFi Hop Delay:[{c4}] {Variables.wifi_hop_delay}"
-            f"\n[{c1}] [+] Verbose:[{c4}] {Variables.verbose}"
+            f"[{c1}] [+] WiFi Interface:[/{c1}]    [{c4}]{Variables.iface_monitor}[/{c4}]"
+            f"\n[{c1}] [+] NTFY BLE path:[/{c1}]     [{c4}]{Variables.ntfy_ble_path}[/{c4}]"
+            f"\n[{c1}] [+] NTFY WiFi path:[/{c1}]    [{c4}]{Variables.ntfy_wifi_path}[/{c4}]"
+            f"\n[{c1}] [+] Client idle:[/{c1}]       [{c4}]{Variables.wifi_client_idle}s[/{c4}]"
+            f"\n[{c1}] [+] Client offline:[/{c1}]    [{c4}]{Variables.wifi_client_offline}s[/{c4}]"
+            f"\n[{c1}] [+] BLE unstable pct:[/{c1}]  [{c4}]{Variables.pct_set_unstable}%[/{c4}]"
+            f"\n[{c1}] [+] BLE drop pct:[/{c1}]      [{c4}]{Variables.pct_set_drop}%[/{c4}]"
+            f"\n[{c1}] [+] WiFi Hops:[/{c1}]         [{c4}]{Variables.wifi_hops}[/{c4}]"
+            f"\n[{c1}] [+] WiFi Hop Delay:[/{c1}]    [{c4}]{Variables.wifi_hop_delay}s[/{c4}]"
+            f"\n[{c1}] [+] Verbose:[/{c1}]           [{c4}]{Variables.verbose}[/{c4}]"
         )
 
-        #console.print(f"[bold green][+] Default Variables below!!!")
-        console.print(
-            f"\n[{c1}]=========   Default Variables   =========\n",
-            stats,
-            f"\n[{c1}]=========================================\n\n"
-        )
-        #console.print(f"\n[bold red][!] Keeping tapping enter if you dont know what values to input, or read the README.md you skidd!!!\n\n")
+        console.print(f"\n[dim]{'─' * 30}  Default Variables  {'─' * 30}[/dim]")
+        console.print(stats)
+        console.print(f"[dim]{'─' * 80}[/dim]\n")
 
 
 
@@ -270,11 +262,7 @@ class CLI():
         """This will be used to set vars via RICH cli"""
 
 
-        c1 = "bold red"
-        c2 = "bold yellow"
-        c3 = "bold green"
-        c4 = "bold blue"
-        c5 = "yellow"
+        c5 = "cyan"
 
         p1 = "[+]"
         p2 = "[*]"
@@ -318,32 +306,25 @@ class CLI():
         """This will print out the vars vals"""
 
 
-        c1 = "bold green"
-        c2 = "bold yellow"
-        c3 = "bold red"
-        c4 = "bold blue"
-
-
+        c1 = "dim white"
+        c4 = "cyan"
 
         stats = (
-            f"[{c1}][+] WiFi Interface:[{c4}] {Variables.iface_monitor}"
-            #f"\n[{c1}] [+] BT Interface:[{c4}] {Variables.bface}"
-            f"\n[{c1}] [+] NTFY wifi_path:[{c4}] {Variables.ntfy_wifi_path}"
-            f"\n[{c1}] [+] NTFY ble_path:[{c4}] {Variables.ntfy_ble_path}"
-            f"\n[{c1}] [+] WiFi client_idle:[{c4}] {Variables.wifi_client_idle}"
-            f"\n[{c1}] [+] WiFi client_offline:[{c4}] {Variables.wifi_client_offline}"
-            f"\n[{c1}] [+] BLE pct_set_unstable:[{c4}] {Variables.pct_set_unstable}"
-            f"\n[{c1}] [+] BLE pct_set_drop:[{c4}] {Variables.pct_set_drop}"
-            f"\n[{c1}] [+] WiFi Hops:[{c4}] {Variables.wifi_hops}"
-            f"\n[{c1}] [+] WiFi Hop Delay:[{c4}] {Variables.wifi_hop_delay}s"
-            f"\n[{c1}] [+] Verbose:[{c4}] {Variables.verbose}"
+            f"[{c1}] [+] WiFi Interface:[/{c1}]    [{c4}]{Variables.iface_monitor}[/{c4}]"
+            f"\n[{c1}] [+] NTFY BLE path:[/{c1}]     [{c4}]{Variables.ntfy_ble_path}[/{c4}]"
+            f"\n[{c1}] [+] NTFY WiFi path:[/{c1}]    [{c4}]{Variables.ntfy_wifi_path}[/{c4}]"
+            f"\n[{c1}] [+] Client idle:[/{c1}]       [{c4}]{Variables.wifi_client_idle}s[/{c4}]"
+            f"\n[{c1}] [+] Client offline:[/{c1}]    [{c4}]{Variables.wifi_client_offline}s[/{c4}]"
+            f"\n[{c1}] [+] BLE unstable pct:[/{c1}]  [{c4}]{Variables.pct_set_unstable}%[/{c4}]"
+            f"\n[{c1}] [+] BLE drop pct:[/{c1}]      [{c4}]{Variables.pct_set_drop}%[/{c4}]"
+            f"\n[{c1}] [+] WiFi Hops:[/{c1}]         [{c4}]{Variables.wifi_hops}[/{c4}]"
+            f"\n[{c1}] [+] WiFi Hop Delay:[/{c1}]    [{c4}]{Variables.wifi_hop_delay}s[/{c4}]"
+            f"\n[{c1}] [+] Verbose:[/{c1}]           [{c4}]{Variables.verbose}[/{c4}]"
         )
 
-        console.print(
-            f"\n\n[{c1}]=========   CONSTANTS   =========\n",
-            stats,
-            f"\n[{c1}]=================================\n"
-        )
+        console.print(f"\n[dim]{'─' * 30}  Your Variables  {'─' * 30}[/dim]")
+        console.print(stats)
+        console.print(f"[dim]{'─' * 80}[/dim]\n")
     
 
     @classmethod
@@ -357,7 +338,7 @@ class CLI():
         if cls._check_vars(): cls._set_vars()
         cls._print_vars()
         
-        console.input(f"\n\n[yellow][!] Press Enter to Acknowledge your Vars! ")
+        console.input(f"\n[dim]  Press Enter to continue...[/dim] ")
 
 
 

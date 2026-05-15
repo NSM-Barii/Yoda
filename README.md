@@ -1,99 +1,134 @@
-# Yoda - Voice Activated IDS
+<p align="center">
+  <img src="banner.gif" alt="Yoda" width="100%"/>
+</p>
 
-![Yoda Banner](banner.png)
+# Yoda
 
-> **Formerly NetAlert-3.0**
+Passive RF monitoring for home. Tracks BLE devices, WiFi access points, and clients in your area in real time — with push notifications and jamming detection.
 
-YODA is a voice-activated **Intrusion Detection System** designed for real-time LAN monitoring. The core feature is **voice control** - use natural language commands to manage your network, including kicking devices off your network, querying the number of active devices, and requesting detailed node information. All data is visualized through a hacker-themed dashboard with live network monitoring and Matrix-style effects.
+Just run it — a CLI will walk you through all settings before launching the TUI.
 
-**🤖 AI-Powered (Coming Soon)** - Integrating AI for intelligent threat detection and anomaly analysis. Contributions welcome!
-
----
-
-## Features
-
-- Real-time device discovery via ARP scanning
-- Hacker-themed web dashboard with Matrix effects
-- Live monitoring of IP, MAC, hostname, vendor info
-- Voice commands for network management
-- Online/Offline tracking for all network nodes
+```bash
+sudo venv/bin/python main.py
+```
 
 ---
 
-## Quick Start
+## What it monitors
 
-1. **Clone and navigate**
-   ```bash
-   git clone https://github.com/nsm-barii/yoda.git
-   cd Yoda
-   ```
+**Bluetooth / BLE**
+- Discovers nearby devices with vendor and manufacturer lookup
+- Tracks signal strength (RSSI) per device
+- Detects unstable devices (randomized/rotating MACs)
+- Jamming detection via asymmetric EWMA drop score
+- New max / min device count alerts
 
-2. **Setup virtual environment**
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
+**WiFi — Access Points**
+- Passive channel-hopping scan across 2.4GHz and 5GHz
+- SSID, BSSID, channel, vendor, client count per AP
+- New AP alerts
 
-3. **Install dependencies**
-   ```bash
-   pip install -e .
-   ```
+**WiFi — Clients**
+- Tracks clients associating with nearby APs
+- Three-state presence: online → idle → offline
+- Session duration tracking
+- Alerts when clients leave and return
 
-4. **Install mpv (required for voice commands)**
-   ```bash
-   # Debian/Ubuntu
-   sudo apt install mpv
+---
 
-   # Arch
-   sudo pacman -S mpv
-   ```
+## TUI
 
-5. **Install YODA Audio System**
-   ```bash
-   bash install_yoda_audio.sh
-   ```
+Four tabs — live dashboard, BLE device table, WiFi AP table, WiFi tree (APs with clients nested underneath).
 
-6. **Download voice recognition model**
-   ```bash
-   cd yoda_modules
-   wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
-   unzip vosk-model-small-en-us-0.15.zip -d models/
-   cd ..
-   ```
+```
+┌─────────────────────────────────────────────────────────┐
+│  BLE: 12  |  APs: 8  |  Clients: 3                     │
+├─────────────────────────────────────────────────────────┤
+│  Dashboard │ BLE Devices │ WiFi APs │ WiFi Tree         │
+├──────────────────────┬──────────────────────────────────┤
+│  Bluetooth/BLE       │  WiFi                            │
+│                      │                                  │
+│  live feed...        │  live feed...                    │
+└──────────────────────┴──────────────────────────────────┘
+```
 
-7. **Run YODA**
-   ```bash
-   sudo ./yoda
-   ```
+---
 
-8. **Access the dashboard**
-   - The program will prompt you for:
-     - **Interface** (e.g., `eth0`, `wlan0`)
-     - **Subnet** (e.g., `192.168.1.0/24`)
-     - **Mode** (choose **GUI**)
-   - Open your browser to the URL displayed in terminal (typically `http://localhost:8000/yoda.html`)
+## Push Notifications (ntfy)
+
+Alerts route to your phone via [ntfy.sh](https://ntfy.sh). Set a topic and install the ntfy app — no account needed.
+
+```bash
+python main.py -i wlan1 -ntfy my-topic-123
+```
+
+| Event | Priority |
+|---|---|
+| New BLE device | low |
+| Unstable BLE device | max |
+| BLE drop score rising | max |
+| BLE instability alert | max |
+| New WiFi AP | max |
+| New client | max |
+| Client left | max |
+| Client returned | default |
+
+---
+
+## Jamming Detection
+
+Yoda tracks a rolling average of visible BLE devices using an asymmetric EWMA:
+- Average adapts **slowly** when count drops (`α = 0.01`) — sustained jamming doesn't let the baseline self-correct
+- Average adapts **faster** when count rises (`α = 0.05`) — recovers cleanly after jamming stops
+
+When the drop score or unstable device ratio exceeds your configured threshold, an alert fires. It won't re-fire until the metric recovers below half the threshold.
+
+---
+
+## Install
+
+```bash
+git clone https://github.com/nsm-barii/yoda
+cd yoda/test
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Requires a wireless adapter that supports monitor mode.
 
 ---
 
 ## Usage
 
-- **Auto-refresh**: Dashboard updates every 2 seconds (configurable)
-- **Search & Filter**: Find nodes by IP, hostname, vendor, or MAC
-- **Inspect Nodes**: Click INSPECT to view detailed device information
-- **Emergency Lockdown**: Visual alert system (future: actual network blocking)
+Flags are optional. Pass them to skip the prompt for that setting, or just set everything interactively.
+
+```
+sudo venv/bin/python main.py -i wlan1
+sudo venv/bin/python main.py -i wlan1 -ntfy my-topic-123
+sudo venv/bin/python main.py -i wlan1 -ntfy my-topic-123 --bu 30 --bd 40
+sudo venv/bin/python main.py -help
+```
+
+| Flag | Description | Default |
+|---|---|---|
+| `-i` | Monitor mode interface | `wlan1` |
+| `-ntfy` | ntfy topic for push notifications | off |
+| `--bu` | BLE unstable device threshold % | 25 |
+| `--bd` | BLE drop score threshold % | 25 |
 
 ---
 
-## Contributing
+## Files
 
-Contributions are welcome, especially for:
-- AI integration for threat detection
-- Automated blocking/prevention features
-- Enhanced voice commands
-- Port scanning integration
-
-Submit PRs to [github.com/nsm-barii/yoda](https://github.com/nsm-barii/yoda)
+```
+main.py          — entry point, CLI arg parsing
+nsm_tui.py       — Textual TUI + CLI setup flow
+nsm_monitor.py   — BLE and WiFi monitor logic
+nsm_database.py  — vendor lookup, notifications, EWMA
+nsm_vars.py      — shared state and variables
+```
 
 ---
 
-**Built by NSM Barii** | [GitHub](https://github.com/nsm-barii/yoda) | Contributions Welcome
+Made by NSM Barii

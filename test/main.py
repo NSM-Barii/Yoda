@@ -24,6 +24,7 @@ import threading, time, sys, argparse
 # NSM IMPORTS
 from nsm_vars import Variables
 from nsm_tui import TUI, CLI
+from nsm_database import Background_Threads
 import nsm_server_mcp
 import nsm_voice_agent
 
@@ -130,13 +131,13 @@ def main():
 
 
 
-    Variables.iface_monitor = args.i    or "wlan1"
-    Variables.ntfy_path     = args.ntfy or False
+    Variables.iface_monitor    = args.i    or "wlan1"
+    Variables.ntfy_path        = args.ntfy or False
     Variables.pct_set_unstable = args.bu
     Variables.pct_set_drop     = args.bd
-    
 
-    
+    if args.i: Background_Threads.set_monitor_mode(args.i)
+
     CLI.main()
     TUI().run()
 

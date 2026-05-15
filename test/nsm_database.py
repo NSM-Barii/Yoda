@@ -570,22 +570,6 @@ class Notifications():
 
     
     # =======
-    #  BLE
-    # =======
-    @classmethod
-    def push_ble_device(cls, mac:str, vendor:str, title:str, priority="low"):
-        """Notify on new BLE device — only fires when verbose is on"""
-
-        headers = {
-            "Title": title,
-            "Priority": priority,
-        }
-        data = f"New BLE Device: {mac}  Vendor: {vendor or 'Unknown'}"
-
-        cls._push_ntfy(headers=headers, data=data)
-
-
-    # =======
     #  WiFi
     # =======
     @classmethod
@@ -610,14 +594,14 @@ class Notifications():
             "Title": f"New Client on {ssid}",
             "Priority": priority,
         }
-        data = f"Client: {client_mac} - vendor_client: {vendor_client}  -->  SSID: {ssid}  Vendor_ssid: {vendor_ssid}"
+        data = f"Client: {client_mac}  Vendor: {vendor_client}"
 
 
         cls._push_ntfy(headers=headers, data=data, type="wifi")
 
     
     @classmethod
-    def client_left(cls, ssid:str, vendor_ssid:str, client_mac:str, vendor_client:str, duration:str, priority="max"):
+    def client_left(cls, ssid:str, client_mac:str, vendor_client:str, duration:str, priority="max"):
         """This will cls.push_ntfy <-- client_left"""
 
         headers = {
@@ -630,7 +614,7 @@ class Notifications():
 
 
     @classmethod
-    def client_returned(cls, ssid:str, vendor_ssid:str, client_mac:str, vendor_client:str, duration:str, priority="default"):
+    def client_returned(cls, ssid:str, client_mac:str, vendor_client:str, duration:str, priority="default"):
         """This will cls.push_ntfy <-- client_returned"""
 
         headers = {
@@ -660,21 +644,21 @@ class Notifications():
 
 
     @classmethod
-    def push_ble_device(cls, mac:str, vendor:str, title:str, priority="max"):
-        """This will cls.push_ntfy <-- unstable_device"""
+    def push_ble_device(cls, mac:str, vendor:str, name:str=None, priority="low"):
+        """This will cls.push_ntfy <-- new BLE device"""
 
         headers = {
-            "Title": f"{title}",
+            "Title": "New BLE Device",
             "Priority": priority,
         }
-        data = f"Local_name: {title}  mac: {mac}  Vendor: {vendor}"
+        data = f"Name: {name or False}  MAC: {mac}  Vendor: {vendor or 'Unknown'}"
 
 
         cls._push_ntfy(headers=headers, data=data, type="ble")
     
 
     @classmethod
-    def device_state(cls, mac:str, vendor:str, title:str, priority="max"):
+    def device_state(cls, mac:str, vendor:str, name:str=None, title:str="", priority="max"):
         """This will cls.push_ntfy <-- unstable_device"""
 
 
@@ -688,16 +672,17 @@ class Notifications():
                 "Title": f"{title}",
                 "Priority": priority,
             }
-            data = f"mac: {mac}  -  Vendor: {vendor}"
+            data = f"Name: {name or False}  MAC: {mac}  Vendor: {vendor or 'Unknown'}"
 
 
             cls._push_ntfy(headers=headers, data=data, type="ble")
-        
+            return True
+
         return False
         
 
     @classmethod
-    def unstable_devices_pct(cls,  unstable_pct:float, title:str="Unstable BLE Devices", cause="Possible BLE/Bluetooth Jamming", priority="max"):
+    def unstable_devices_pct(cls,  unstable_pct:float, title:str="BLE Instability Alert", cause="Possible BLE/Bluetooth Jamming", priority="max"):
         """This will cls.push_ntfy <-- unstable_devices"""
 
         headers = {
@@ -711,7 +696,7 @@ class Notifications():
 
     
     @classmethod
-    def drop_pct(cls, drop_pct:float, title:str = "Alot of BLE/Bluetooth Drop Score", cause="A large spike of BLE/Bluetooth devices have dropped in a short timeframe!", priority="max"):
+    def drop_pct(cls, drop_pct:float, title:str = "BLE Device Drop Alert", cause="A large spike of BLE/Bluetooth devices have dropped in a short timeframe!", priority="max"):
         """This will cls.push_ntfy <-- drop_score"""
 
         headers = {
@@ -724,13 +709,15 @@ class Notifications():
 
 
     @classmethod
-    def _push_ntfy(cls, headers, data, type=["ble", "wifi"]):
+    def _push_ntfy(cls, headers, data, type="ble"):
         """This will be used to push notifications to a server to view via (mainly) phone"""
         
         
         if type   == "wifi": ntfy_path = Variables.ntfy_wifi_path
-        elif type == "ble":  ntfy_path = Variables.ntfy_ble_path 
+        elif type == "ble":  ntfy_path = Variables.ntfy_ble_path
         else: return False
+
+        if not ntfy_path: return False
 
         url = f"https://ntfy.sh/{ntfy_path}"
 
@@ -832,6 +819,11 @@ class Background_Threads:
 
         cls.hop = True
         threading.Thread(target=hopper, args=(), daemon=True).start()
+
+    @staticmethod
+    def set_monitor_mode(iface):
+        """Put iface into monitor mode"""
+        subprocess.run(f"sudo ip link set {iface} down; sudo iw dev {iface} set type monitor; sudo ip link set {iface} up", shell=True)
 
     @staticmethod
     def change_iface_mode(iface, mode=["managed", "monitor"], verbose=True):
@@ -1035,8 +1027,8 @@ class Extensions():
                 msg = f"[bold red][!] BLE drop score rising:[/bold red] {drop_pct}%   {cls.last_count} -> {count}"
                 Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", msg)
                 
-                n = cls.last_count =- count
-                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score rising", cause=f"Dropped Devices: {n} -> {count}\nA large spike of BLE/Bluetooth devices have dropped in a short timeframe!")
+                n = cls.last_count - count
+                Notifications.drop_pct(drop_pct=drop_pct, title="BLE drop score rising", cause=f"Dropped Devices: {cls.last_count} -> {count}  ({n} dropped)\nA large spike of BLE/Bluetooth devices have dropped in a short timeframe!")
                 cls.good_drop = False
 
 

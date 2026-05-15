@@ -89,19 +89,22 @@ class Monitor_Bluetooth():
 
         try:
 
-            scanner = BleakScanner()
-            
+            scanner    = BleakScanner()
+            first      = 15
+            start_time = time.time()
+
             #with Live(panel, console=console, refresh_per_second=4):
 
             while True:
 
 
                 await scanner.start()
-                await asyncio.sleep(5)
+                await asyncio.sleep(first)
                 await scanner.stop()
                 devices = scanner.discovered_devices_and_advertisement_data
                 now     = time.time()
                 cycle   += 1
+                first   = 5
 
 
 
@@ -142,7 +145,7 @@ class Monitor_Bluetooth():
                             }
 
 
-                            if Variables.verbose: Notifications.push_ble_device(mac=mac, vendor=vendor, title=f"{name or "no local name"}")
+                            if Variables.verbose: Notifications.push_ble_device(mac=mac, vendor=vendor, name=name)
 
                             cls.devices += 1
                             DeviceLog.log_ble(mac, name, vendor, manuf)
@@ -201,7 +204,7 @@ class Monitor_Bluetooth():
                             Variables.push_event(f"Alert. Unstable BLE device detected. {vendor}")
 
                             if not Extensions.good_drop or not Extensions.good_unstable: 
-                                Notifications.device_state(mac=mac, vendor=vendor, title="Unstable BLE Device")
+                                Notifications.device_state(mac=mac, vendor=vendor, name=dev["data"].get("name"), title="Unstable BLE Device")
 
                     else:
                         if (dev["status"] == "unstable"):
@@ -218,7 +221,7 @@ class Monitor_Bluetooth():
                                 
 
                                 if not Extensions.good_drop or not Extensions.good_unstable:
-                                    Notifications.device_state(mac=mac, vendor=vendor, title="BLE Device now Stable")
+                                    Notifications.device_state(mac=mac, vendor=vendor, name=dev["data"].get("name"), title="BLE Device now Stable")
 
 
                     """
@@ -252,14 +255,15 @@ class Monitor_Bluetooth():
 
                 Variables.ble_current = total
 
+                warmed_up = now - start_time > 60
+
                 if total > Variables.ble_max:
                     Variables.ble_max = total
                     data = (f"[bold green][!] New BLE max:[/bold green] {total} devices")
                     Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                     Variables.push_event(f"New maximum. {total} Bluetooth devices detected")
 
-                    Notifications.device_count(device_count=total, title="New BLE Max")
-
+                    if warmed_up: Notifications.device_count(device_count=total, title="New BLE Max")
 
                 if total < Variables.ble_min:
                     Variables.ble_min = total
@@ -267,7 +271,7 @@ class Monitor_Bluetooth():
                     Variables.tui.call_from_thread(Variables.tui.push_data, "#ble", data)
                     Variables.push_event(f"Alert. Device count dropped to {total} Bluetooth devices")
 
-                    Notifications.device_count(device_count=total, title="New BLE Min")
+                    if warmed_up: Notifications.device_count(device_count=total, title="New BLE Min")
 
                 wifi_aps    = len(Variables.live_map_wifi)
                 wifi_clients = sum(len(d["clients"]) for d in Variables.live_map_wifi.values() if "clients" in d)
@@ -434,9 +438,9 @@ class Monitor_WiFi():
                             vendor_ssid = cls.live_map[ap_mac]["vendor"]
                             vendor      = cls.DataBase.get_vendor_main(mac=client_mac, verbose=False)
                             away_for    = cls._fmt_duration(now_ts - client.get("left_time", client["first_seen"]))
-                            data = f"[bold green][CLIENT BACK]  {client_mac}  ->  {ap['ssid']}  away: {away_for}[/bold green]"
+                            data = f"[bold green][CLIENT BACK]  {client_mac}  ->  {cls.live_map[ap_mac]['ssid']}  away: {away_for}[/bold green]"
                             Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
-                            Notifications.client_returned(ssid=ssid, vendor_ssid=vendor_ssid, client_mac=client_mac, vendor_client=vendor, duration=away_for)
+                            Notifications.client_returned(ssid=ssid, client_mac=client_mac, vendor_client=vendor, duration=away_for)
 
 
         except Exception as e: Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", f"[bold red][!] WiFi Error:[/bold red] {e}")
@@ -468,24 +472,24 @@ class Monitor_WiFi():
                     elapsed = now - client["last_seen"]
                     status  = client["status"]
 
-                    if elapsed > 120 and status == "online":
+                    if elapsed > Variables.wifi_client_idle and status == "online":
                         client["status"] = "idle"
                         data = f"[dim][CLIENT IDLE]  {client_mac}  ->  {ap['ssid']}[/dim]"
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
 
-                    elif elapsed > 600 and status == "idle":
+                    elif elapsed > Variables.wifi_client_offline and status == "idle":
                         client["status"]    = "offline"
                         client["left_time"] = now
                         duration            = cls._fmt_duration(now - client["first_seen"])
                         data = f"[dim][CLIENT LEFT]  {client_mac}  ->  {ap['ssid']}  session: {duration}[/dim]"
-                        total_clients = sum(len(d["clients"]) for d in cls.live_map.values())
+                        total_clients = sum(1 for d in cls.live_map.values() for c in d["clients"].values() if c["status"] in ("online", "idle"))
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                         Variables.tui.call_from_thread(Variables.tui.update_stats, len(Variables.live_map_bt), len(cls.live_map), total_clients)
 
                         ssid          = ap["ssid"]
                         vendor_ssid   = ap["vendor"]
                         vendor_client = DataBase.WiFi.get_vendor_main(mac=client_mac)
-                        Notifications.client_left(ssid=ssid, vendor_ssid=vendor_ssid, client_mac=client_mac, vendor_client=vendor_client, duration=duration)
+                        Notifications.client_left(ssid=ssid, client_mac=client_mac, vendor_client=vendor_client, duration=duration)
 
 
 
