@@ -139,8 +139,6 @@ class TUI(App):
     def upsert_ap(self, bssid, ssid, vendor, channel, rssi, clients, status="online"):
         table = self.query_one("#ap_table", DataTable)
         color = "green" if status == "online" else "dim"
-        if Variables.obfuscate: ssid = "hidden"; bssid = "xx:xx:xx:xx:xx:xx"
-
         if bssid in self._ap_rows:
             key     = self._ap_rows[bssid]
             session = self._fmt_session(self._ap_first_ts[bssid])
@@ -164,7 +162,6 @@ class TUI(App):
     def add_ap_to_tree(self, bssid, ssid, rssi):
         """This will ad an ap to a tree"""
 
-        if Variables.obfuscate: ssid = "hidden"; bssid = "xx:xx:xx:xx:xx:xx"
         tree   = self.query_one("#wifi_tree", Tree)
         branch = tree.root.add(f"[bold green]{ssid}[/bold green]  [dim]{bssid}[/dim]  [cyan]{rssi}dBm[/cyan]", expand=True)
         self._ap_branches[bssid] = branch
@@ -173,7 +170,6 @@ class TUI(App):
     def add_client_to_tree(self, bssid, mac, vendor):
         """This will add clients to the tree"""
 
-        if Variables.obfuscate: mac = "xx:xx:xx:xx:xx:xx"
         if bssid not in self._ap_branches: return
         self._ap_branches[bssid].add_leaf(f"[yellow]{mac}[/yellow]  [dim]{vendor or 'Unknown'}[/dim]")
 

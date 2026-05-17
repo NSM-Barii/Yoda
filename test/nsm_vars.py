@@ -71,7 +71,6 @@ class Variables():
     refresh_per_second = 1
     
     
-    obfuscate     = False
     iface_managed = False
     subnet    = "192.168.1.0/24"
     ip_router = "192.168.1.1"
