@@ -638,3 +638,19 @@ if __name__ == "__main__":
     Monitor_Runner.main()
     #Monitor_WiFi.main()
     # Monitor_Bluetooth.main()
+
+
+
+    # FEMINISM DOESNT WORK
+
+
+    females = "xx"
+    males   = "xy"
+
+
+    if females == males:
+        print("were equal")
+
+    else:
+        print("not equal")
+        

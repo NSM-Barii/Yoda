@@ -180,7 +180,7 @@ class TUI(App):
         """This will ad an ap to a tree"""
 
         tree          = self.query_one("#wifi_tree", Tree)
-        display_ssid  = "hidden" if Variables.obfuscate else ssid
+        display_ssid  = ssid[:3] + "*" * 5 if Variables.obfuscate else ssid
         display_bssid = ":".join(bssid.split(":")[:3]) + ":xx:xx:xx" if Variables.obfuscate else bssid
         branch = tree.root.add(f"[bold green]{display_ssid}[/bold green]  [dim]{display_bssid}[/dim]  [cyan]{rssi}dBm[/cyan]", expand=True)
         self._ap_branches[bssid] = branch
