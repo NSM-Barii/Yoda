@@ -100,7 +100,7 @@ class TUI(App):
             for ap in Monitor_WiFi.live_map.values():
                 ssid = ap.get("ssid")
                 if ssid and ssid in data:
-                    data = data.replace(ssid, ssid[:3] + "*" * (len(ssid) - 3))
+                    data = data.replace(ssid, ssid[:3] + "*" * 5) #(len(ssid) - 3))
         self.query_one(str(id), RichLog).write(data)
 
 
