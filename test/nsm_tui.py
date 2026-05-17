@@ -8,7 +8,7 @@ from textual.containers import Horizontal
 
 
 # ETC IMPORTS
-import time, pyfiglet, subprocess, os
+import time, pyfiglet, subprocess, os, re
 from datetime import datetime
 
 # NSM IMPORTS
@@ -18,6 +18,7 @@ from nsm_monitor import Monitor_Runner
 
 # CONSTANTS
 console = Variables.console
+re_mac  = re.compile(r"(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}")
 
 
 class TUI(App):
@@ -93,6 +94,8 @@ class TUI(App):
     def push_data(self, id, data):
         """This will be used to push data"""
 
+        if Variables.obfuscate:
+            data = re_mac.sub("xx:xx:xx:xx:xx:xx", data)
         self.query_one(str(id), RichLog).write(data)
 
 
@@ -104,7 +107,7 @@ class TUI(App):
 
     @staticmethod
     def _fmt_session(start_ts):
-        """This will be used to get time, this lowkey makes sense now that i look like it"""
+        """This will be used to get time, this lowkey makes sense after looking at it for a while."""
 
         elapsed = int(time.time() - start_ts)
         h, rem  = divmod(elapsed, 3600)
@@ -115,6 +118,9 @@ class TUI(App):
 
 
     def upsert_ble(self, mac, vendor, manuf, name, rssi, status="online"):
+        """append ble device"""
+
+
         table = self.query_one("#ble_table", DataTable)
         color = "green" if status == "online" else "dim"
 
@@ -132,11 +138,15 @@ class TUI(App):
             first_str = datetime.now().strftime("%H:%M:%S")
             self._ble_first_ts[mac] = now
             num = len(self._ble_rows) + 1
-            row = (str(num), str(rssi), f"[{color}]{mac}", name or "-", vendor or "-", manuf or "-", first_str, "0s", status)
+            display_mac = "xx:xx:xx:xx:xx:xx" if Variables.obfuscate else mac
+            row = (str(num), str(rssi), f"[{color}]{display_mac}", name or "-", vendor or "-", manuf or "-", first_str, "0s", status)
             self._ble_rows[mac] = table.add_row(*row)
 
 
     def upsert_ap(self, bssid, ssid, vendor, channel, rssi, clients, status="online"):
+        """append wifi ap"""
+
+
         table = self.query_one("#ap_table", DataTable)
         color = "green" if status == "online" else "dim"
         if bssid in self._ap_rows:
@@ -155,15 +165,19 @@ class TUI(App):
             first_str = datetime.now().strftime("%H:%M:%S")
             self._ap_first_ts[bssid] = now
             num = len(self._ap_rows) + 1
-            row = (str(num), str(rssi), f"[{color}]{ssid}", bssid, vendor or "-", str(channel), str(clients), first_str, "0s", status)
+            display_ssid  = "hidden" if Variables.obfuscate else ssid
+            display_bssid = "xx:xx:xx:xx:xx:xx" if Variables.obfuscate else bssid
+            row = (str(num), str(rssi), f"[{color}]{display_ssid}", display_bssid, vendor or "-", str(channel), str(clients), first_str, "0s", status)
             self._ap_rows[bssid] = table.add_row(*row)
 
 
     def add_ap_to_tree(self, bssid, ssid, rssi):
         """This will ad an ap to a tree"""
 
-        tree   = self.query_one("#wifi_tree", Tree)
-        branch = tree.root.add(f"[bold green]{ssid}[/bold green]  [dim]{bssid}[/dim]  [cyan]{rssi}dBm[/cyan]", expand=True)
+        tree          = self.query_one("#wifi_tree", Tree)
+        display_ssid  = "hidden" if Variables.obfuscate else ssid
+        display_bssid = "xx:xx:xx:xx:xx:xx" if Variables.obfuscate else bssid
+        branch = tree.root.add(f"[bold green]{display_ssid}[/bold green]  [dim]{display_bssid}[/dim]  [cyan]{rssi}dBm[/cyan]", expand=True)
         self._ap_branches[bssid] = branch
 
 
@@ -171,7 +185,8 @@ class TUI(App):
         """This will add clients to the tree"""
 
         if bssid not in self._ap_branches: return
-        self._ap_branches[bssid].add_leaf(f"[yellow]{mac}[/yellow]  [dim]{vendor or 'Unknown'}[/dim]")
+        display_mac = "xx:xx:xx:xx:xx:xx" if Variables.obfuscate else mac
+        self._ap_branches[bssid].add_leaf(f"[yellow]{display_mac}[/yellow]  [dim]{vendor or 'Unknown'}[/dim]")
 
 
 

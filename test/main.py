@@ -119,6 +119,7 @@ def main():
     parser.add_argument("--bd", type=int, default=25, help="BLE drop score threshold (default: 25)")
     parser.add_argument("-ntfy", metavar="TOPIC",  help="ntfy topic for push notifications (e.g. my-topic-123)")
     parser.add_argument("-help", action="store_true", help="Show this help message")
+    parser.add_argument("--obs",  action="store_true", help="Obfuscate MACs and SSIDs in the TUI")
 
 
     args = parser.parse_args()
@@ -128,6 +129,8 @@ def main():
         console.print(panel)
         parser.print_help()
         return False
+
+    if args.obs: Variables.obfuscate = True
 
     CLI.main()
     Background_Threads.set_monitor_mode(iface=Variables.iface_monitor)

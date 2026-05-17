@@ -1,0 +1,27 @@
+GIT BRANCHES
+============
+
+create & switch
+---------------
+git checkout -b new-branch       # create + switch
+git checkout branch-name         # switch to existing
+
+see where you are
+-----------------
+git branch                       # list branches, * = current
+
+push branch to github
+---------------------
+git push -u origin branch-name   # first time only (per branch)
+git push                         # every push after that
+
+merge into main
+---------------
+git checkout main                # switch to main first
+git merge branch-name            # merge your branch in
+git push                         # push merged main
+
+delete branch after merging
+---------------------------
+git branch -d branch-name             # local
+git push origin --delete branch-name  # remote
