@@ -246,7 +246,7 @@ class Monitor_Bluetooth():
                 # DataBase.push_results(devices=cls.war_drive, verbose=False)
 
                                     
-                count = len(devices) if devices else 0
+                count     = len(devices) if devices else 0
                 total     = len(cls.live_map) or 1
                 unstables = len({mac for mac in unstable_devices if mac in cls.live_map})
 

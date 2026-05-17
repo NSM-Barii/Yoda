@@ -18,7 +18,7 @@ from nsm_monitor import Monitor_Runner
 
 # CONSTANTS
 console = Variables.console
-re_mac  = re.compile(r"(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}")
+re_mac  = re.compile(r"((?:[0-9a-fA-F]{2}:){2}[0-9a-fA-F]{2})(?::[0-9a-fA-F]{2}){3}")
 
 
 class TUI(App):
@@ -95,7 +95,12 @@ class TUI(App):
         """This will be used to push data"""
 
         if Variables.obfuscate:
-            data = re_mac.sub("xx:xx:xx:xx:xx:xx", data)
+            data = re_mac.sub(r"\1:xx:xx:xx", data)
+            from nsm_monitor import Monitor_WiFi
+            for ap in Monitor_WiFi.live_map.values():
+                ssid = ap.get("ssid")
+                if ssid and ssid in data:
+                    data = data.replace(ssid, ssid[:3] + "*" * (len(ssid) - 3))
         self.query_one(str(id), RichLog).write(data)
 
 
@@ -138,7 +143,7 @@ class TUI(App):
             first_str = datetime.now().strftime("%H:%M:%S")
             self._ble_first_ts[mac] = now
             num = len(self._ble_rows) + 1
-            display_mac = "xx:xx:xx:xx:xx:xx" if Variables.obfuscate else mac
+            display_mac = ":".join(mac.split(":")[:3]) + ":xx:xx:xx" if Variables.obfuscate else mac
             row = (str(num), str(rssi), f"[{color}]{display_mac}", name or "-", vendor or "-", manuf or "-", first_str, "0s", status)
             self._ble_rows[mac] = table.add_row(*row)
 
@@ -165,8 +170,8 @@ class TUI(App):
             first_str = datetime.now().strftime("%H:%M:%S")
             self._ap_first_ts[bssid] = now
             num = len(self._ap_rows) + 1
-            display_ssid  = "hidden" if Variables.obfuscate else ssid
-            display_bssid = "xx:xx:xx:xx:xx:xx" if Variables.obfuscate else bssid
+            display_ssid  = ssid[:3] + "*" * (len(ssid) - 3) if Variables.obfuscate else ssid
+            display_bssid = ":".join(bssid.split(":")[:3]) + ":xx:xx:xx" if Variables.obfuscate else bssid
             row = (str(num), str(rssi), f"[{color}]{display_ssid}", display_bssid, vendor or "-", str(channel), str(clients), first_str, "0s", status)
             self._ap_rows[bssid] = table.add_row(*row)
 
@@ -176,7 +181,7 @@ class TUI(App):
 
         tree          = self.query_one("#wifi_tree", Tree)
         display_ssid  = "hidden" if Variables.obfuscate else ssid
-        display_bssid = "xx:xx:xx:xx:xx:xx" if Variables.obfuscate else bssid
+        display_bssid = ":".join(bssid.split(":")[:3]) + ":xx:xx:xx" if Variables.obfuscate else bssid
         branch = tree.root.add(f"[bold green]{display_ssid}[/bold green]  [dim]{display_bssid}[/dim]  [cyan]{rssi}dBm[/cyan]", expand=True)
         self._ap_branches[bssid] = branch
 
@@ -185,7 +190,7 @@ class TUI(App):
         """This will add clients to the tree"""
 
         if bssid not in self._ap_branches: return
-        display_mac = "xx:xx:xx:xx:xx:xx" if Variables.obfuscate else mac
+        display_mac = ":".join(mac.split(":")[:3]) + ":xx:xx:xx" if Variables.obfuscate else mac
         self._ap_branches[bssid].add_leaf(f"[yellow]{display_mac}[/yellow]  [dim]{vendor or 'Unknown'}[/dim]")
 
 
