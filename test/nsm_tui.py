@@ -292,6 +292,8 @@ class CLI():
             f"\n[{c1}] [+] WiFi Hops:[/{c1}]         [{c4}]{Variables.wifi_hops}[/{c4}]"
             f"\n[{c1}] [+] WiFi Hop Delay:[/{c1}]    [{c4}]{Variables.wifi_hop_delay}s[/{c4}]"
             f"\n[{c1}] [+] Verbose:[/{c1}]           [{c4}]{Variables.verbose}[/{c4}]"
+            f"\n[{c1}] [+] Client ntfy:[/{c1}]     [{c4}]{Variables.notify_client_events}[/{c4}]"
+            f"\n[{c1}] [+] TTS interval:[/{c1}]    [{c4}]{Variables.tts_interval}s[/{c4}]"
         )
 
         console.print(f"\n[dim]{'─' * 30}  Default Variables  {'─' * 30}[/dim]")
@@ -325,8 +327,10 @@ class CLI():
 
         ntfy_ble_path  = console.input(f"[{c5}]{p2} ntfy_ble_path:[/{c5}] ")            or Variables.ntfy_ble_path
         ntfy_wifi_path = console.input(f"[{c5}]{p2} ntfy_wifi_path:[/{c5}] ")           or Variables.ntfy_wifi_path
-        verbose = console.input(f"[{c5}]{p2} verbose:[/{c5}] ")                         or Variables.verbose
-        #console.print("[bold purple]=" * 40) 
+        verbose              = console.input(f"[{c5}]{p2} verbose:[/{c5}] ")              or Variables.verbose
+        notify_client_events = console.input(f"[{c5}]{p2} notify_client_events:[/{c5}] ") or Variables.notify_client_events
+        tts_interval         = console.input(f"[{c5}]{p2} tts_interval (secs):[/{c5}] ")  or Variables.tts_interval
+        #console.print("[bold purple]=" * 40)
 
         
         if not wifi_hops: wifi_hops = Variables.wifi_hops
@@ -342,7 +346,9 @@ class CLI():
         Variables.wifi_client_offline = wifi_client_offline
         Variables.pct_set_unstable    = pct_set_unstable
         Variables.pct_set_drop        = pct_set_drop
-        Variables.verbose             = True if verbose else False
+        Variables.verbose              = True if verbose else False
+        Variables.notify_client_events = True if notify_client_events else False
+        Variables.tts_interval         = int(tts_interval)
 
     @classmethod
     def _print_vars(cls):
@@ -363,6 +369,8 @@ class CLI():
             f"\n[{c1}] [+] WiFi Hops:[/{c1}]         [{c4}]{Variables.wifi_hops}[/{c4}]"
             f"\n[{c1}] [+] WiFi Hop Delay:[/{c1}]    [{c4}]{Variables.wifi_hop_delay}s[/{c4}]"
             f"\n[{c1}] [+] Verbose:[/{c1}]           [{c4}]{Variables.verbose}[/{c4}]"
+            f"\n[{c1}] [+] Client ntfy:[/{c1}]       [{c4}]{Variables.notify_client_events}[/{c4}]"
+            f"\n[{c1}] [+] TTS interval:[/{c1}]      [{c4}]{Variables.tts_interval}s[/{c4}]"
         )
 
         console.print(f"\n[dim]{'─' * 30}  Your Variables  {'─' * 30}[/dim]")

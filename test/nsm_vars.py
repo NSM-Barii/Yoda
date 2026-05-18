@@ -85,6 +85,8 @@ class Variables():
     
     ntfy_ble_path  = "nsm-test-123"
     ntfy_wifi_path = False
+    notify_client_events = False
+    tts_interval         = 600
     
     pct_set_unstable = 25
     pct_set_drop     = 25

@@ -573,11 +573,27 @@ class Notifications():
     #  WiFi
     # =======
     @classmethod
-    def new_ap(cls, ssid:str, bssid:str, channel:int, vendor:str, priority="max"):
+    def deauth(cls, src:str, dst:str, channel, ap_ssid:str=None, target:str=None, priority="max"):
+        """This will cls.push_ntfy <-- deauth frame detected"""
+
+        headers = {
+            "Title": "Deauth Frame Detected",
+            "Priority": priority,
+        }
+
+        target_str = "broadcast (all clients)" if dst == "ff:ff:ff:ff:ff:ff" else (target or dst)
+        ap_str     = f"  |  AP: {ap_ssid}" if ap_ssid else ""
+        data       = f"Src: {src}  ->  {target_str}\nCh: {channel}{ap_str}"
+
+        cls._push_ntfy(headers=headers, data=data, type="wifi")
+
+
+    @classmethod
+    def new_ap(cls, ssid:str, bssid:str, channel:int, vendor:str, title:str="New AP Detected", priority="max"):
         """This will cls.push_ntfy <-- new_ap"""
 
         headers = {
-            "Title": "New AP Detected",
+            "Title": title,
             "Priority": priority,
         }
         data = f"SSID: {ssid}  BSSID: {bssid}  Ch: {channel}  Vendor: {vendor}"

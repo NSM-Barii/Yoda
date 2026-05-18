@@ -22,6 +22,7 @@ from datetime import datetime
 # NSM IMPORTS
 from nsm_vars import Variables
 from nsm_database import DataBase, Extensions, Background_Threads, DeviceLog, Notifications
+from nsm_tts import TTS
 # from nsm_modules.nsm_utilities import Utilities, Connection_Handler
 
 
@@ -320,7 +321,9 @@ class Monitor_WiFi():
     """This will track WiFi APs and clients"""
 
 
-    DataBase = DataBase.WiFi
+    DataBase      = DataBase.WiFi
+    _last_deauth  = 0
+    _deauth_cooldown = 30
 
 
     @classmethod
@@ -328,7 +331,7 @@ class Monitor_WiFi():
 
         cmd = [
             "tshark", "-i", iface, "-l",
-            "-Y", "wlan.fc.type_subtype == 0x08 || wlan.fc.type == 2",
+            "-Y", "wlan.fc.type_subtype == 0x08 || wlan.fc.type == 2 || wlan.fc.type_subtype == 0x0c",
             "-T", "fields",
             "-e", "wlan.ta",
             "-e", "wlan.ra",
@@ -339,6 +342,7 @@ class Monitor_WiFi():
         ]
 
         num = 0
+        start_time = time.time()
 
         process = subprocess.Popen(
             cmd, 
@@ -353,7 +357,10 @@ class Monitor_WiFi():
 
                 parts = line.strip().split("\t")
                 if len(parts) < 6: continue
-
+                
+                wait    = 60
+                now     = time.time()
+                warmed_up = now - start_time
                 src     = parts[0]
                 dst     = parts[1]
                 raw     = parts[2].strip()
@@ -365,7 +372,8 @@ class Monitor_WiFi():
 
                 if not src or src == "ff:ff:ff:ff:ff:ff": continue
 
-
+                
+                # BEACON
                 if ft == 0x08:
 
                     if raw:
@@ -394,9 +402,26 @@ class Monitor_WiFi():
                         total = len(cls.live_map)
                         Variables.tui.call_from_thread(Variables.tui.update_stats, len(Variables.live_map_bt), total, 0)
 
-                        Notifications.new_ap(ssid=ssid, bssid=src, channel=channel, vendor=vendor)
+                        if warmed_up > wait: Notifications.new_ap(ssid=ssid, bssid=src, channel=channel, vendor=vendor)
+                
+
+                # DEAUTH
+                elif ft == 0x0c:
+                    data = f"[bold red][DEAUTH][/bold red]  [red]{src}[/red]  [dim]->[/dim]  [red]{dst}[/red]  [dim]ch:[/dim][bold cyan]{channel}[/bold cyan]"
+                    Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
+                    if now - cls._last_deauth > cls._deauth_cooldown:
+                        ap_ssid = cls.live_map[src]["ssid"] if src in cls.live_map else (cls.live_map[dst]["ssid"] if dst in cls.live_map else None)
+                        target  = None
+                        for ap in cls.live_map.values():
+                            if dst in ap["clients"]:
+                                target = dst
+                                break
+                        Variables.push_event(f"Deauth frame detected on channel {channel}")
+                        Notifications.deauth(src=src, dst=dst, channel=channel, ap_ssid=ap_ssid, target=target)
+                        cls._last_deauth = now
 
 
+                # EVERYTHING ELSE
                 else:  
 
                     ap_mac     = src if src in cls.live_map else (dst if dst in cls.live_map else None)
@@ -433,7 +458,8 @@ class Monitor_WiFi():
 
                         ssid        = cls.live_map[ap_mac]["ssid"]
                         vendor_ssid = cls.live_map[ap_mac]["vendor"]
-                        Notifications.new_client(ssid=ssid, vendor_ssid=vendor_ssid, client_mac=client_mac, vendor_client=vendor)
+                       
+                        if warmed_up > wait: Notifications.new_client(ssid=ssid, vendor_ssid=vendor_ssid, client_mac=client_mac, vendor_client=vendor)
 
                     else:
                         
@@ -449,7 +475,8 @@ class Monitor_WiFi():
                             away_for    = cls._fmt_duration(now_ts - client.get("left_time", client["first_seen"]))
                             data = f"[bold green][CLIENT BACK]  {client_mac}  ->  {cls.live_map[ap_mac]['ssid']}  away: {away_for}[/bold green]"
                             Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
-                            Notifications.client_returned(ssid=ssid, client_mac=client_mac, vendor_client=vendor, duration=away_for)
+                            
+                            if warmed_up > wait and Variables.notify_client_events: Notifications.client_returned(ssid=ssid, client_mac=client_mac, vendor_client=vendor, duration=away_for)
 
 
         except Exception as e: Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", f"[bold red][!] WiFi Error:[/bold red] {e}")
@@ -468,6 +495,9 @@ class Monitor_WiFi():
     @classmethod
     def _client_watchdog(cls):
         """This method will be used to track when clients on aps go missing"""
+
+
+        time.sleep(60)
 
 
         while True:
@@ -498,7 +528,8 @@ class Monitor_WiFi():
                         ssid          = ap["ssid"]
                         vendor_ssid   = ap["vendor"]
                         vendor_client = DataBase.WiFi.get_vendor_main(mac=client_mac)
-                        Notifications.client_left(ssid=ssid, client_mac=client_mac, vendor_client=vendor_client, duration=duration)
+                       
+                        if Variables.notify_client_events: Notifications.client_left(ssid=ssid, client_mac=client_mac, vendor_client=vendor_client, duration=duration)
 
 
 
@@ -627,6 +658,7 @@ class Monitor_Runner():
         """Run module classess"""
 
         DeviceLog.init()
+        TTS.start()
 
         threading.Thread(target=Monitor_Bluetooth.main, args=(), daemon=True).start()
 
