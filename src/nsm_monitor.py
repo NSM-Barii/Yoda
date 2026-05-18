@@ -22,7 +22,6 @@ from datetime import datetime
 # NSM IMPORTS
 from nsm_vars import Variables
 from nsm_database import DataBase, Extensions, Background_Threads, DeviceLog, Notifications
-from nsm_tts import TTS
 # from nsm_modules.nsm_utilities import Utilities, Connection_Handler
 
 
