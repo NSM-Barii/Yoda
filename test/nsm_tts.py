@@ -87,3 +87,4 @@ class TTS():
 
         threading.Thread(target=cls._worker,           daemon=True, name="TTS-Worker").start()
         threading.Thread(target=cls._stats_announcer,  daemon=True, name="TTS-Stats").start()
+        Variables.push_event("Yoda online")
