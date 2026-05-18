@@ -387,6 +387,10 @@ class Monitor_WiFi():
                         Variables.tui.call_from_thread(Variables.tui.upsert_ap, src, ssid, vendor, channel, rssi, 0)
                         Variables.tui.call_from_thread(Variables.tui.add_ap_to_tree, src, ssid, rssi)
 
+                        ch_aps     = sum(1 for ap in cls.live_map.values() if ap["channel"] == channel)
+                        ch_clients = sum(len(ap["clients"]) for ap in cls.live_map.values() if ap["channel"] == channel)
+                        Variables.tui.call_from_thread(Variables.tui.upsert_channel, channel, ch_aps, ch_clients)
+
                         total = len(cls.live_map)
                         Variables.tui.call_from_thread(Variables.tui.update_stats, len(Variables.live_map_bt), total, 0)
 
@@ -418,6 +422,11 @@ class Monitor_WiFi():
                         Variables.tui.call_from_thread(Variables.tui.push_data, "#wifi", data)
                         Variables.tui.call_from_thread(Variables.tui.add_client_to_tree, ap_mac, client_mac, vendor)
                         Variables.tui.call_from_thread(Variables.tui.upsert_ap, ap_mac, ap["ssid"], ap["vendor"], ap["channel"], ap["rssi"], client_count)
+
+                        ch         = ap["channel"]
+                        ch_aps     = sum(1 for a in cls.live_map.values() if a["channel"] == ch)
+                        ch_clients = sum(len(a["clients"]) for a in cls.live_map.values() if a["channel"] == ch)
+                        Variables.tui.call_from_thread(Variables.tui.upsert_channel, ch, ch_aps, ch_clients)
 
                         total_clients = sum(len(d["clients"]) for d in cls.live_map.values())
                         Variables.tui.call_from_thread(Variables.tui.update_stats, len(Variables.live_map_bt), len(cls.live_map), total_clients)

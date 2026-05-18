@@ -60,6 +60,9 @@ class TUI(App):
             with TabPane("WiFi Tree"):
                 yield Tree("Access Points", id="wifi_tree")
 
+            with TabPane("Channels"):
+                yield DataTable(id="ch_table", cursor_type="row")
+
         yield Footer()
 
 
@@ -81,11 +84,17 @@ class TUI(App):
 
         self.query_one("#wifi_tree", Tree).root.expand()
 
+        ch_table = self.query_one("#ch_table", DataTable)
+        _, self._ck_ch_aps, self._ck_ch_clients, self._ck_ch_bar = ch_table.add_columns(
+            "Channel", "APs", "Clients", "Congestion"
+        )
+
         self._ble_rows      = {}
         self._ble_first_ts  = {}
         self._ap_rows       = {}
         self._ap_first_ts   = {}
         self._ap_branches   = {}
+        self._ch_rows       = {}
 
         Variables.tui = self
         Monitor_Runner.main()
@@ -192,6 +201,24 @@ class TUI(App):
         if bssid not in self._ap_branches: return
         display_mac = ":".join(mac.split(":")[:3]) + ":xx:xx:xx" if Variables.obfuscate else mac
         self._ap_branches[bssid].add_leaf(f"[yellow]{display_mac}[/yellow]  [dim]{vendor or 'Unknown'}[/dim]")
+
+
+    def upsert_channel(self, channel, aps, clients):
+        """This will update the channel congestion table"""
+
+        table = self.query_one("#ch_table", DataTable)
+        bar   = "█" * aps + "░" * max(0, 10 - aps)
+
+        if channel in self._ch_rows:
+            key = self._ch_rows[channel]
+            try: table.update_cell(key, self._ck_ch_aps,     str(aps))
+            except: pass
+            try: table.update_cell(key, self._ck_ch_clients, str(clients))
+            except: pass
+            try: table.update_cell(key, self._ck_ch_bar,     bar)
+            except: pass
+        else:
+            self._ch_rows[channel] = table.add_row(str(channel), str(aps), str(clients), bar)
 
 
 
