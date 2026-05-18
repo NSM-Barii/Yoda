@@ -1,0 +1,32 @@
+resolving dependencies...
+looking for conflicting packages...
+
+Packages (1) mpg123-1.33.4-1
+
+Total Installed Size:  1.18 MiB
+Net Upgrade Size:      0.00 MiB
+
+:: Retrieving packages...
+ mpg123-1.33.4-1-x86_64 downloading...
+Errors occurred, no packages were upgraded.
+
+
+sudo pacman -S mpg123 > error.txt 
+warning: mpg123-1.33.4-1 is up to date -- reinstalling
+:: Proceed with installation? [Y/n] y
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst' from fastly.mirror.pkgbuild.com : The requested URL returned error: 404
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst' from geo.mirror.pkgbuild.com : The requested URL returned error: 404
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst' from ftpmirror.infania.net : The requested URL returned error: 404
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst' from mirror.rackspace.com : The requested URL returned error: 404
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst' from al.arch.niranjan.co : The requested URL returned error: 404
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst' from mirrors.teamcloud.am : The requested URL returned error: 404
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst' from mirror.aarnet.edu.au : The requested URL returned error: 404
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst' from au.mirrors.cicku.me : The requested URL returned error: 404
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst' from archlinux.mirror.digitalpacific.com.au : The requested URL returned error: 404
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst' from gsl-syd.mm.fcix.net : The requested URL returned error: 404
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst' from au.arch.niranjan.co : The requested URL returned error: 404
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst' from syd.mirror.rackspace.com : The requested URL returned error: 404
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst' from mirror.alwyzon.net : The requested URL returned error: 404
+error: failed retrieving file 'mpg123-1.33.4-1-x86_64.pkg.tar.zst.sig' from at.mirrors.cicku.me : Exceeded the maximum allowed file size (16384) with 16384 bytes
+warning: failed to retrieve some files
+error: failed to commit transaction (failed to retrieve some files)
