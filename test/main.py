@@ -26,7 +26,7 @@ from nsm_vars import Variables
 from nsm_tui import TUI, CLI
 from nsm_database import Background_Threads
 import nsm_server_mcp
-import nsm_voice_agent
+# import nsm_voice_agent
 
 
 # CONSTANTS
