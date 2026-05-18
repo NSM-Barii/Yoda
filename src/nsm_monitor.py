@@ -658,7 +658,6 @@ class Monitor_Runner():
         """Run module classess"""
 
         DeviceLog.init()
-        TTS.start()
 
         threading.Thread(target=Monitor_Bluetooth.main, args=(), daemon=True).start()
 

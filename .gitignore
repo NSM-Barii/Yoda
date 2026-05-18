@@ -1,3 +1,4 @@
 test/router_client.py
 test/router_api.py
 test/ROUTER_SETUP.md
+database/database.json

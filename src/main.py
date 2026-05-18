@@ -110,7 +110,7 @@ def main():
 
 
     parser = argparse.ArgumentParser(
-        add_help=True,
+        add_help=False,
         description="Yoda — Passive RF monitoring. Tracks BLE devices, WiFi APs, and clients in your area."
     )
 
