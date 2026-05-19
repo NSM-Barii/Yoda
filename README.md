@@ -87,9 +87,23 @@ When the drop score or unstable device ratio exceeds your configured threshold, 
 
 ## Install
 
+**BlueZ (Bluetooth):**
+```bash
+sudo apt update && sudo apt install bluez bluez-tools bluez-firmware -y
+sudo systemctl enable bluetooth && sudo systemctl start bluetooth
+systemctl status bluetooth
+```
+
+**tshark (Wi-Fi packet capture):**
+```bash
+sudo apt install tshark -y
+```
+> During install, select **Yes** when asked to allow non-superusers to capture packets, or run with `sudo`.
+
+**Yoda:**
 ```bash
 git clone https://github.com/nsm-barii/yoda
-cd yoda/test
+cd yoda/src
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
