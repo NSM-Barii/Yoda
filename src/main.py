@@ -1,16 +1,4 @@
-"""
-YODA Main Launcher
-==================
-Starts MCP server, monitoring, and voice agent from one command.
-
-Usage:
-    python main.py                    # Voice agent only
-    python main.py --mcp              # MCP server + Voice agent
-    python main.py --monitor          # Monitoring + Voice agent
-    python main.py --full             # Everything (MCP + Monitoring + Voice)
-"""
-
-
+# THIS WILL BE THE START OF SOMETHING GREAT // _archive holds old concept
 
 # UI IMPORTS
 from rich.panel import Panel
