@@ -1,4 +1,5 @@
-test/router_client.py
-test/router_api.py
-test/ROUTER_SETUP.md
 database/database.json
+src/devices.db
+src/venv
+src/__pycache__
+src/*.pyc

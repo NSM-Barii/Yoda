@@ -1,7 +1,7 @@
 bleak
 scapy
 requests
-ipaddress
+#ipaddress
 asyncio
 manuf
 rich
@@ -10,9 +10,9 @@ pyfiglet
 
 
 # LLM / Voice Agent
-livekit-agents
-livekit-plugins-openai
-livekit-plugins-deepgram
-livekit-plugins-silero
-fastmcp
+#livekit-agents
+#livekit-plugins-openai
+#livekit-plugins-deepgram
+#livekit-plugins-silero
+#fastmcp
 python-dotenv

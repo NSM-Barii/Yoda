@@ -5,7 +5,7 @@
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from mcp.server.fastmcp import FastMCP
+#from mcp.server.fastmcp import FastMCP
 import threading, queue, time
 
 
@@ -61,7 +61,7 @@ class Variables():
     # CONSTANTS
     tui   = False
     console = Console()
-    mcp  = FastMCP("Yoda")
+    #mcp  = FastMCP("Yoda")
     LOCK = threading.RLock()
 
 
